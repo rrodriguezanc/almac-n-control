@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Product } from "../hooks/useInventory";
 
 interface ImportExcelProps {
-    onImport: (products: Product[]) => void;
+    onImport: (products: Product[]) => boolean;
 }
 
 export const ImportExcel = ({ onImport }: ImportExcelProps) => {
@@ -33,30 +33,47 @@ export const ImportExcel = ({ onImport }: ImportExcelProps) => {
                 }
 
                 const formattedProducts: Product[] = jsonData.map((item, index) => {
-                    // Limpiamos los nombres de las columnas por si tienen espacios ocultos
-                    const cleanItem: any = {};
-                    Object.keys(item).forEach(key => {
-                        cleanItem[key.trim()] = item[key];
-                    });
+                    const keys = Object.keys(item);
+                    const findKey = (possibleNames: string[]) => {
+                        return keys.find(k => {
+                            const cleanK = k.trim().toLowerCase();
+                            return possibleNames.some(p => cleanK.includes(p.toLowerCase()));
+                        });
+                    };
+
+                    const keyNum = findKey(["número de artículo", "numero de articulo", "sku", "codigo", "código"]);
+                    const keyDesc = findKey(["descripción del artículo", "descripcion del articulo", "nombre", "item", "articulo"]);
+                    const keyStock = findKey(["en stock", "stock", "cantidad", "cant."]);
+                    const keyClase = findKey(["clase descripcion", "clase descripción", "categoría", "categoria", "clase"]);
+                    const keySubClase = findKey(["sub clase descripcion", "sub clase descripción", "subclase", "sub-clase"]);
+                    const keyUnit = findKey(["unidad de medida", "unidad", "unit", "u.m."]);
+                    const keyLoc = findKey(["ubicación", "ubicacion", "location", "pasillo", "estante"]);
+                    const keyPrice = findKey(["último precio de compra", "ultimo precio de compra", "precio", "costo", "último precio determinado"]);
+                    const keyDate = findKey(["última fecha de compra", "ultima fecha de compra", "fecha"]);
+                    const keyStatus = findKey(["inactivo", "estado", "status"]);
 
                     return {
-                        id: String(cleanItem["Número de artículo"] || index + 1),
-                        name: String(cleanItem["Descripción del artículo"] || "Sin nombre"),
-                        sku: String(cleanItem["Número de artículo"] || `SKU-${index}`),
-                        category: String(cleanItem["CLASE DESCRIPCION"] || "General"),
-                        subCategory: String(cleanItem["SUB CLASE DESCRIPCION"] || ""),
-                        stock: Number(cleanItem["En stock"] || 0),
+                        id: String(item[keyNum!] || index + 1),
+                        name: String(item[keyDesc!] || "Sin nombre"),
+                        sku: String(item[keyNum!] || `SKU-${index}`),
+                        category: String(item[keyClase!] || "General"),
+                        subCategory: String(item[keySubClase!] || ""),
+                        stock: Number(item[keyStock!] || 0),
                         minStock: 0,
-                        unit: String(cleanItem["Unidad de medida de compras"] || "pzas"),
-                        location: String(cleanItem["Ubicación"] || cleanItem["Ubicacion"] || "N/A"),
-                        lastPrice: Number(cleanItem["Último precio de compra"] || cleanItem["Último precio determinado"] || 0),
-                        lastPurchaseDate: String(cleanItem["Última fecha de compra"] || ""),
-                        status: String(cleanItem["Inactivo"] || "No"),
+                        unit: String(item[keyUnit!] || "pzas"),
+                        location: String(item[keyLoc!] || "N/A"),
+                        lastPrice: Number(item[keyPrice!] || 0),
+                        lastPurchaseDate: String(item[keyDate!] || ""),
+                        status: String(item[keyStatus!] || "No"),
                     };
                 });
 
-                onImport(formattedProducts);
-                toast.success(`${formattedProducts.length} productos importados correctamente`);
+                const success = onImport(formattedProducts);
+                if (success) {
+                    toast.success(`${formattedProducts.length} productos importados correctamente`);
+                } else {
+                    toast.error("El archivo es demasiado grande para guardarlo en este navegador. Intenta con un archivo más pequeño.");
+                }
             } catch (error) {
                 console.error("Error al leer el Excel:", error);
                 toast.error("Error al procesar el archivo Excel. Verifica el formato.");

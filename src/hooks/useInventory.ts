@@ -47,11 +47,23 @@ export function useInventory() {
   });
 
   useEffect(() => {
-    localStorage.setItem("inventory_products", JSON.stringify(products));
+    try {
+      localStorage.setItem("inventory_products", JSON.stringify(products));
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "QuotaExceededError") {
+        console.error("Error: Límite de almacenamiento excedido (localStorage). El inventario es demasiado grande para guardarse en el navegador.");
+      }
+    }
   }, [products]);
 
   useEffect(() => {
-    localStorage.setItem("inventory_movements", JSON.stringify(movements));
+    try {
+      localStorage.setItem("inventory_movements", JSON.stringify(movements));
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "QuotaExceededError") {
+        console.error("Error: Límite de almacenamiento excedido para movimientos.");
+      }
+    }
   }, [movements]);
 
   const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -93,10 +105,16 @@ export function useInventory() {
   };
 
   const importProducts = (newProducts: Product[]) => {
-    setProducts(newProducts);
-    setMovements([]); // Reset movements when importing a new base
-    localStorage.setItem("inventory_products", JSON.stringify(newProducts));
-    localStorage.setItem("inventory_movements", JSON.stringify([]));
+    try {
+      setProducts(newProducts);
+      setMovements([]);
+      localStorage.setItem("inventory_products", JSON.stringify(newProducts));
+      localStorage.setItem("inventory_movements", JSON.stringify([]));
+      return true;
+    } catch (e) {
+      console.error("Error al importar: archivo demasiado grande para localStorage");
+      return false;
+    }
   };
 
   const today = new Date().toISOString().split('T')[0];
