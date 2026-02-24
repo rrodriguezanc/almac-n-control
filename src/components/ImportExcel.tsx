@@ -27,20 +27,33 @@ export const ImportExcel = ({ onImport }: ImportExcelProps) => {
                 const worksheet = workbook.Sheets[sheetName];
                 const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[];
 
-                const formattedProducts: Product[] = jsonData.map((item, index) => ({
-                    id: String(item["Número de artículo"] || index + 1),
-                    name: String(item["Descripción del artículo"] || "Sin nombre"),
-                    sku: String(item["Número de artículo"] || `SKU-${index}`),
-                    category: String(item["CLASE DESCRIPCION"] || "General"),
-                    subCategory: String(item["SUB CLASE DESCRIPCION"] || ""),
-                    stock: Number(item["En stock"] || 0),
-                    minStock: 0,
-                    unit: String(item["Unidad de medida de compras"] || "pzas"),
-                    location: String(item["Ubicación"] || item["Ubicacion"] || "N/A"),
-                    lastPrice: Number(item["Último precio de compra"] || 0),
-                    lastPurchaseDate: String(item["Última fecha de compra"] || ""),
-                    status: String(item["Inactivo"] || "No"),
-                }));
+                // Debug para ver qué columnas detecta realmente
+                if (jsonData.length > 0) {
+                    console.log("Columnas detectadas en el Excel:", Object.keys(jsonData[0]));
+                }
+
+                const formattedProducts: Product[] = jsonData.map((item, index) => {
+                    // Limpiamos los nombres de las columnas por si tienen espacios ocultos
+                    const cleanItem: any = {};
+                    Object.keys(item).forEach(key => {
+                        cleanItem[key.trim()] = item[key];
+                    });
+
+                    return {
+                        id: String(cleanItem["Número de artículo"] || index + 1),
+                        name: String(cleanItem["Descripción del artículo"] || "Sin nombre"),
+                        sku: String(cleanItem["Número de artículo"] || `SKU-${index}`),
+                        category: String(cleanItem["CLASE DESCRIPCION"] || "General"),
+                        subCategory: String(cleanItem["SUB CLASE DESCRIPCION"] || ""),
+                        stock: Number(cleanItem["En stock"] || 0),
+                        minStock: 0,
+                        unit: String(cleanItem["Unidad de medida de compras"] || "pzas"),
+                        location: String(cleanItem["Ubicación"] || cleanItem["Ubicacion"] || "N/A"),
+                        lastPrice: Number(cleanItem["Último precio de compra"] || cleanItem["Último precio determinado"] || 0),
+                        lastPurchaseDate: String(cleanItem["Última fecha de compra"] || ""),
+                        status: String(cleanItem["Inactivo"] || "No"),
+                    };
+                });
 
                 onImport(formattedProducts);
                 toast.success(`${formattedProducts.length} productos importados correctamente`);
