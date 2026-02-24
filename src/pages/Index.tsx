@@ -4,12 +4,13 @@ import { StatsCards } from "../components/StatsCards";
 import { InventoryTable } from "../components/InventoryTable";
 import { MovementForm } from "../components/MovementForm";
 import { MovementHistory } from "../components/MovementHistory";
+import { ImportExcel } from "../components/ImportExcel";
 import { Warehouse, LayoutDashboard, Package, ArrowLeftRight, History } from "lucide-react";
 
 type Tab = "dashboard" | "inventario" | "movimiento" | "historial";
 
 const Index = () => {
-  const { products, movements, addMovement, stats } = useInventory();
+  const { products, movements, addMovement, addProduct, importProducts, stats } = useInventory();
   const [tab, setTab] = useState<Tab>("dashboard");
 
   const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
@@ -42,11 +43,10 @@ const Index = () => {
               <button
                 key={t.id}
                 onClick={() => setTab(t.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
-                  tab === t.id
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${tab === t.id
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
               >
                 <t.icon className="h-4 w-4" />
                 {t.label}
@@ -68,7 +68,12 @@ const Index = () => {
           </>
         )}
 
-        {tab === "inventario" && <InventoryTable products={products} />}
+        {tab === "inventario" && (
+          <div className="space-y-6">
+            <ImportExcel onImport={importProducts} />
+            <InventoryTable products={products} />
+          </div>
+        )}
 
         {tab === "movimiento" && (
           <div className="max-w-lg mx-auto">

@@ -1,5 +1,4 @@
-import { useState } from "react";
-
+import { useState, useEffect } from "react";
 
 export interface Product {
   id: string;
@@ -34,20 +33,28 @@ const initialProducts: Product[] = [
 
 const initialMovements: Movement[] = [
   { id: "m1", productId: "1", productName: "Tornillos M8x30", type: "entrada", quantity: 500, date: "2026-02-21T08:30:00", note: "Orden de compra #1234", responsible: "Carlos M." },
-  { id: "m2", productId: "3", productName: "Guantes de Nitrilo (Caja)", type: "salida", quantity: 5, date: "2026-02-21T09:15:00", note: "Línea de producción 2", responsible: "Ana R." },
-  { id: "m3", productId: "2", productName: "Aceite Hidráulico 20L", type: "entrada", quantity: 20, date: "2026-02-20T14:00:00", note: "Proveedor Lubritec", responsible: "Carlos M." },
-  { id: "m4", productId: "4", productName: "Cinta Aislante Negra", type: "salida", quantity: 10, date: "2026-02-20T10:45:00", note: "Mantenimiento eléctrico", responsible: "Luis G." },
-  { id: "m5", productId: "6", productName: "Filtro de Aire Industrial", type: "salida", quantity: 3, date: "2026-02-19T16:20:00", note: "Equipo compresor #7", responsible: "Ana R." },
 ];
 
-let idCounter = 100;
-function generateId() {
-  return `gen-${++idCounter}`;
-}
-
 export function useInventory() {
-  const [products, setProducts] = useState<Product[]>(initialProducts);
-  const [movements, setMovements] = useState<Movement[]>(initialMovements);
+  const [products, setProducts] = useState<Product[]>(() => {
+    const saved = localStorage.getItem("inventory_products");
+    return saved ? JSON.parse(saved) : initialProducts;
+  });
+
+  const [movements, setMovements] = useState<Movement[]>(() => {
+    const saved = localStorage.getItem("inventory_movements");
+    return saved ? JSON.parse(saved) : initialMovements;
+  });
+
+  useEffect(() => {
+    localStorage.setItem("inventory_products", JSON.stringify(products));
+  }, [products]);
+
+  useEffect(() => {
+    localStorage.setItem("inventory_movements", JSON.stringify(movements));
+  }, [movements]);
+
+  const generateId = () => Math.random().toString(36).substr(2, 9);
 
   const addMovement = (
     productId: string,
@@ -85,12 +92,20 @@ export function useInventory() {
     setProducts((prev) => [...prev, { ...product, id: generateId() }]);
   };
 
+  const importProducts = (newProducts: Product[]) => {
+    setProducts(newProducts);
+    setMovements([]); // Reset movements when importing a new base
+    localStorage.setItem("inventory_products", JSON.stringify(newProducts));
+    localStorage.setItem("inventory_movements", JSON.stringify([]));
+  };
+
+  const today = new Date().toISOString().split('T')[0];
   const todayEntries = movements.filter(
-    (m) => m.type === "entrada" && m.date.startsWith("2026-02-21")
+    (m) => m.type === "entrada" && m.date.startsWith(today)
   ).length;
 
   const todayExits = movements.filter(
-    (m) => m.type === "salida" && m.date.startsWith("2026-02-21")
+    (m) => m.type === "salida" && m.date.startsWith(today)
   ).length;
 
   const lowStockCount = products.filter((p) => p.stock <= p.minStock).length;
@@ -100,6 +115,7 @@ export function useInventory() {
     movements,
     addMovement,
     addProduct,
+    importProducts,
     stats: {
       totalProducts: products.length,
       todayEntries,
@@ -108,3 +124,4 @@ export function useInventory() {
     },
   };
 }
+
