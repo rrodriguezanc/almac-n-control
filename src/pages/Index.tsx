@@ -26,7 +26,7 @@ const Index = () => {
       <header className="bg-primary text-primary-foreground border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3">
           <div className="bg-white p-1 rounded-lg overflow-hidden flex items-center justify-center">
-            <img src="/shouxin.jpeg" alt="Logotipo Shouxin" className="h-10 w-10 object-contain" />
+            <img src="/shouxin.jpeg" alt="Logotipo Shouxin" className="h-40 w-80 object-contain" />
           </div>
           <div>
             <h1 className="text-xl font-bold tracking-tight">Control de Almacén</h1>
