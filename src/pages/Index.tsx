@@ -25,8 +25,8 @@ const Index = () => {
       {/* Header */}
       <header className="bg-primary text-primary-foreground border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3">
-          <div className="bg-accent text-accent-foreground p-2 rounded-lg">
-            <Warehouse className="h-6 w-6" />
+          <div className="bg-white p-1 rounded-lg overflow-hidden flex items-center justify-center">
+            <img src="/shouxin.jpeg" alt="Logotipo Shouxin" className="h-10 w-10 object-contain" />
           </div>
           <div>
             <h1 className="text-xl font-bold tracking-tight">Control de Almacén</h1>
@@ -68,22 +68,26 @@ const Index = () => {
           </>
         )}
 
-        {tab === "inventario" && (
-          <div className="space-y-6">
-            <ImportExcel onImport={importProducts} />
-            <InventoryTable products={products} />
-          </div>
-        )}
+        {
+          tab === "inventario" && (
+            <div className="space-y-6">
+              <ImportExcel onImport={importProducts} />
+              <InventoryTable products={products} />
+            </div>
+          )
+        }
 
-        {tab === "movimiento" && (
-          <div className="max-w-lg mx-auto">
-            <MovementForm products={products} onSubmit={addMovement} />
-          </div>
-        )}
+        {
+          tab === "movimiento" && (
+            <div className="max-w-lg mx-auto">
+              <MovementForm products={products} onSubmit={addMovement} />
+            </div>
+          )
+        }
 
         {tab === "historial" && <MovementHistory movements={movements} />}
-      </main>
-    </div>
+      </main >
+    </div >
   );
 };
 
