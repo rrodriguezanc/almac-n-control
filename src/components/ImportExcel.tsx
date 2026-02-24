@@ -28,14 +28,18 @@ export const ImportExcel = ({ onImport }: ImportExcelProps) => {
                 const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[];
 
                 const formattedProducts: Product[] = jsonData.map((item, index) => ({
-                    id: String(item.id || index + 1),
-                    name: String(item.nombre || item.name || "Sin nombre"),
-                    sku: String(item.sku || item.codigo || `SKU-${index}`),
-                    category: String(item.categoria || item.category || "General"),
-                    stock: Number(item.stock || item.cantidad || 0),
-                    minStock: Number(item.minStock || item.stockMinimo || 0),
-                    unit: String(item.unidad || item.unit || "pzas"),
-                    location: String(item.ubicacion || item.location || "N/A"),
+                    id: String(item["Número de artículo"] || index + 1),
+                    name: String(item["Descripción del artículo"] || "Sin nombre"),
+                    sku: String(item["Número de artículo"] || `SKU-${index}`),
+                    category: String(item["CLASE DESCRIPCION"] || "General"),
+                    subCategory: String(item["SUB CLASE DESCRIPCION"] || ""),
+                    stock: Number(item["En stock"] || 0),
+                    minStock: 0,
+                    unit: String(item["Unidad de medida de compras"] || "pzas"),
+                    location: String(item["Ubicación"] || item["Ubicacion"] || "N/A"),
+                    lastPrice: Number(item["Último precio de compra"] || 0),
+                    lastPurchaseDate: String(item["Última fecha de compra"] || ""),
+                    status: String(item["Inactivo"] || "No"),
                 }));
 
                 onImport(formattedProducts);

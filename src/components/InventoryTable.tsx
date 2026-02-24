@@ -19,25 +19,29 @@ export function InventoryTable({ products }: InventoryTableProps) {
               <th className="text-left p-3 font-semibold">SKU</th>
               <th className="text-left p-3 font-semibold">Producto</th>
               <th className="text-left p-3 font-semibold">Categoría</th>
+              <th className="text-left p-3 font-semibold">Subcategoría</th>
               <th className="text-left p-3 font-semibold">Ubicación</th>
               <th className="text-right p-3 font-semibold">Stock</th>
-              <th className="text-right p-3 font-semibold">Mínimo</th>
+              <th className="text-right p-3 font-semibold">Último Precio</th>
               <th className="text-center p-3 font-semibold">Estado</th>
             </tr>
           </thead>
           <tbody>
             {products.map((p) => {
-              const isLow = p.stock <= p.minStock;
+              const isLow = p.stock <= (p.minStock || 0);
               return (
                 <tr key={p.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                   <td className="p-3 font-mono text-xs text-muted-foreground">{p.sku}</td>
                   <td className="p-3 font-medium">{p.name}</td>
-                  <td className="p-3 text-muted-foreground">{p.category}</td>
+                  <td className="p-3 text-muted-foreground whitespace-nowrap">{p.category}</td>
+                  <td className="p-3 text-muted-foreground whitespace-nowrap">{p.subCategory}</td>
                   <td className="p-3 font-mono text-xs">{p.location}</td>
                   <td className="p-3 text-right font-semibold tabular-nums">
                     {p.stock} <span className="text-muted-foreground font-normal">{p.unit}</span>
                   </td>
-                  <td className="p-3 text-right text-muted-foreground tabular-nums">{p.minStock}</td>
+                  <td className="p-3 text-right text-muted-foreground tabular-nums">
+                    {p.lastPrice ? `$${p.lastPrice.toLocaleString()}` : "-"}
+                  </td>
                   <td className="p-3 text-center">
                     {isLow ? (
                       <span className="inline-flex items-center gap-1 text-xs font-medium bg-destructive/10 text-destructive px-2 py-1 rounded-full">

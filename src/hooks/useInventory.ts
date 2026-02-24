@@ -5,10 +5,14 @@ export interface Product {
   name: string;
   sku: string;
   category: string;
+  subCategory?: string;
   stock: number;
   minStock: number;
   unit: string;
   location: string;
+  lastPrice?: number;
+  lastPurchaseDate?: string;
+  status?: string;
 }
 
 export interface Movement {
@@ -23,12 +27,8 @@ export interface Movement {
 }
 
 const initialProducts: Product[] = [
-  { id: "1", name: "Tornillos M8x30", sku: "TRN-001", category: "Ferretería", stock: 1500, minStock: 200, unit: "pzas", location: "A-01" },
-  { id: "2", name: "Aceite Hidráulico 20L", sku: "ACE-010", category: "Lubricantes", stock: 45, minStock: 10, unit: "bidones", location: "B-03" },
-  { id: "3", name: "Guantes de Nitrilo (Caja)", sku: "SEG-005", category: "Seguridad", stock: 8, minStock: 15, unit: "cajas", location: "C-02" },
-  { id: "4", name: "Cinta Aislante Negra", sku: "ELE-020", category: "Eléctrico", stock: 120, minStock: 30, unit: "rollos", location: "A-05" },
-  { id: "5", name: "Rodamiento 6205", sku: "MEC-015", category: "Mecánico", stock: 25, minStock: 10, unit: "pzas", location: "D-01" },
-  { id: "6", name: "Filtro de Aire Industrial", sku: "FIL-003", category: "Filtros", stock: 5, minStock: 8, unit: "pzas", location: "B-07" },
+  { id: "1", name: "Tornillos M8x30", sku: "TRN-001", category: "Ferretería", subCategory: "Tornillería", stock: 1500, minStock: 200, unit: "pzas", location: "A-01", lastPrice: 0.5, lastPurchaseDate: "2026-02-01" },
+  { id: "2", name: "Aceite Hidráulico 20L", sku: "ACE-010", category: "Lubricantes", subCategory: "Aceites", stock: 45, minStock: 10, unit: "bidones", location: "B-03", lastPrice: 120, lastPurchaseDate: "2026-01-15" },
 ];
 
 const initialMovements: Movement[] = [
