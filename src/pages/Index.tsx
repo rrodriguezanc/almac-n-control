@@ -10,7 +10,7 @@ import { Warehouse, LayoutDashboard, Package, ArrowLeftRight, History } from "lu
 type Tab = "dashboard" | "inventario" | "movimiento" | "historial";
 
 const Index = () => {
-  const { products, movements, addMovement, addProduct, importProducts, stats } = useInventory();
+  const { products, movements, addMovement, addProduct, importProducts, stats, loading } = useInventory();
   const [tab, setTab] = useState<Tab>("dashboard");
 
   const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
@@ -26,7 +26,7 @@ const Index = () => {
       <header className="bg-primary text-primary-foreground border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3">
           <div className="bg-white p-1 rounded-lg overflow-hidden flex items-center justify-center">
-            <img src="/shouxin.jpeg" alt="Logotipo Shouxin" className="h-40 w-80 object-contain" />
+            <img src="/shouxin.jpeg" alt="Logotipo Shouxin" className="h-12 w-12 object-contain" />
           </div>
           <div>
             <h1 className="text-xl font-bold tracking-tight">Control de Almacén</h1>
@@ -58,36 +58,45 @@ const Index = () => {
 
       {/* Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-        {tab === "dashboard" && (
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 animate-pulse">
+            <Package className="h-12 w-12 text-muted-foreground mb-4 animate-bounce" />
+            <p className="text-lg text-muted-foreground">Cargando inventario desde Supabase...</p>
+          </div>
+        ) : (
           <>
-            <StatsCards {...stats} />
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <MovementHistory movements={movements} />
-              <InventoryTable products={products} />
-            </div>
+            {tab === "dashboard" && (
+              <>
+                <StatsCards {...stats} />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <MovementHistory movements={movements} />
+                  <InventoryTable products={products} />
+                </div>
+              </>
+            )}
+
+            {
+              tab === "inventario" && (
+                <div className="space-y-6">
+                  <ImportExcel onImport={importProducts} />
+                  <InventoryTable products={products} />
+                </div>
+              )
+            }
+
+            {
+              tab === "movimiento" && (
+                <div className="max-w-lg mx-auto">
+                  <MovementForm products={products} onSubmit={addMovement} />
+                </div>
+              )
+            }
+
+            {tab === "historial" && <MovementHistory movements={movements} />}
           </>
         )}
-
-        {
-          tab === "inventario" && (
-            <div className="space-y-6">
-              <ImportExcel onImport={importProducts} />
-              <InventoryTable products={products} />
-            </div>
-          )
-        }
-
-        {
-          tab === "movimiento" && (
-            <div className="max-w-lg mx-auto">
-              <MovementForm products={products} onSubmit={addMovement} />
-            </div>
-          )
-        }
-
-        {tab === "historial" && <MovementHistory movements={movements} />}
-      </main >
-    </div >
+      </main>
+    </div>
   );
 };
 

@@ -13,7 +13,7 @@ interface MovementFormProps {
     quantity: number,
     note: string,
     responsible: string
-  ) => boolean;
+  ) => Promise<boolean>;
 }
 
 export function MovementForm({ products, onSubmit }: MovementFormProps) {
@@ -24,8 +24,9 @@ export function MovementForm({ products, onSubmit }: MovementFormProps) {
   const [responsible, setResponsible] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setSuccess("");
@@ -41,18 +42,25 @@ export function MovementForm({ products, onSubmit }: MovementFormProps) {
       return;
     }
 
-    const result = onSubmit(productId, type, qty, note, responsible);
-    if (!result) {
-      setError("Stock insuficiente para esta salida.");
-      return;
-    }
+    try {
+      setIsSubmitting(true);
+      const result = await onSubmit(productId, type, qty, note, responsible);
+      if (!result) {
+        setError("Error al registrar el movimiento. Verifica el stock o la conexión.");
+        return;
+      }
 
-    setSuccess(`${type === "entrada" ? "Entrada" : "Salida"} registrada correctamente.`);
-    setProductId("");
-    setQuantity("");
-    setNote("");
-    setResponsible("");
-    setTimeout(() => setSuccess(""), 3000);
+      setSuccess(`${type === "entrada" ? "Entrada" : "Salida"} registrada correctamente.`);
+      setProductId("");
+      setQuantity("");
+      setNote("");
+      setResponsible("");
+      setTimeout(() => setSuccess(""), 3000);
+    } catch (e) {
+      setError("Error inesperado al procesar el movimiento.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -67,22 +75,20 @@ export function MovementForm({ products, onSubmit }: MovementFormProps) {
           <button
             type="button"
             onClick={() => setType("entrada")}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-semibold transition-all ${
-              type === "entrada"
-                ? "bg-success text-success-foreground shadow-md"
-                : "bg-muted text-muted-foreground hover:bg-muted/80"
-            }`}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-semibold transition-all ${type === "entrada"
+              ? "bg-success text-success-foreground shadow-md"
+              : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
           >
             <ArrowDownToLine className="h-4 w-4" /> Entrada
           </button>
           <button
             type="button"
             onClick={() => setType("salida")}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-semibold transition-all ${
-              type === "salida"
-                ? "bg-destructive text-destructive-foreground shadow-md"
-                : "bg-muted text-muted-foreground hover:bg-muted/80"
-            }`}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-semibold transition-all ${type === "salida"
+              ? "bg-destructive text-destructive-foreground shadow-md"
+              : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
           >
             <ArrowUpFromLine className="h-4 w-4" /> Salida
           </button>
@@ -147,8 +153,8 @@ export function MovementForm({ products, onSubmit }: MovementFormProps) {
           <p className="text-sm text-success bg-success/10 p-3 rounded-lg">{success}</p>
         )}
 
-        <Button type="submit" className="w-full">
-          Registrar {type === "entrada" ? "Entrada" : "Salida"}
+        <Button type="submit" className="w-full" disabled={isSubmitting}>
+          {isSubmitting ? "Registrando..." : `Registrar ${type === "entrada" ? "Entrada" : "Salida"}`}
         </Button>
       </form>
     </div>

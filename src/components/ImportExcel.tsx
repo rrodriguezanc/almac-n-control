@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Product } from "../hooks/useInventory";
 
 interface ImportExcelProps {
-    onImport: (products: Product[]) => boolean;
+    onImport: (products: Product[]) => Promise<boolean>;
 }
 
 export const ImportExcel = ({ onImport }: ImportExcelProps) => {
@@ -19,7 +19,7 @@ export const ImportExcel = ({ onImport }: ImportExcelProps) => {
         setLoading(true);
         const reader = new FileReader();
 
-        reader.onload = (event) => {
+        reader.onload = async (event) => {
             try {
                 const data = new Uint8Array(event.target?.result as ArrayBuffer);
                 const workbook = XLSX.read(data, { type: "array" });
@@ -41,15 +41,15 @@ export const ImportExcel = ({ onImport }: ImportExcelProps) => {
                         });
                     };
 
-                    const keyNum = findKey(["número de artículo", "numero de articulo", "sku", "codigo", "código"]);
-                    const keyDesc = findKey(["descripción del artículo", "descripcion del articulo", "nombre", "item", "articulo"]);
-                    const keyStock = findKey(["en stock", "stock", "cantidad", "cant."]);
-                    const keyClase = findKey(["clase descripcion", "clase descripción", "categoría", "categoria", "clase"]);
-                    const keySubClase = findKey(["sub clase descripcion", "sub clase descripción", "subclase", "sub-clase"]);
-                    const keyUnit = findKey(["unidad de medida", "unidad", "unit", "u.m."]);
+                    const keyNum = findKey(["número de artículo", "numero_articulo", "sku", "codigo", "código"]);
+                    const keyDesc = findKey(["descripción del artículo", "descripcion_articulo", "nombre", "item", "articulo"]);
+                    const keyStock = findKey(["en stock", "en_stock", "stock", "cantidad", "cant."]);
+                    const keyClase = findKey(["clase descripcion", "clase_descripcion", "categoría", "categoria", "clase"]);
+                    const keySubClase = findKey(["sub clase descripcion", "sub_clase_descripcion", "subclase", "sub-clase"]);
+                    const keyUnit = findKey(["unidad de medida", "unidad_medida", "unidad", "unit", "u.m."]);
                     const keyLoc = findKey(["ubicación", "ubicacion", "location", "pasillo", "estante"]);
-                    const keyPrice = findKey(["último precio de compra", "ultimo precio de compra", "precio", "costo", "último precio determinado"]);
-                    const keyDate = findKey(["última fecha de compra", "ultima fecha de compra", "fecha"]);
+                    const keyPrice = findKey(["último precio de compra", "ultimo_precio_compra", "ultimo_precio_determinado", "precio", "costo"]);
+                    const keyDate = findKey(["última fecha de compra", "ultima_fecha_compra", "fecha"]);
                     const keyStatus = findKey(["inactivo", "estado", "status"]);
 
                     return {
@@ -68,11 +68,11 @@ export const ImportExcel = ({ onImport }: ImportExcelProps) => {
                     };
                 });
 
-                const success = onImport(formattedProducts);
+                const success = await onImport(formattedProducts);
                 if (success) {
                     toast.success(`${formattedProducts.length} productos importados correctamente`);
                 } else {
-                    toast.error("El archivo es demasiado grande para guardarlo en este navegador. Intenta con un archivo más pequeño.");
+                    toast.error("El archivo es demasiado grande para guardarlo.");
                 }
             } catch (error) {
                 console.error("Error al leer el Excel:", error);

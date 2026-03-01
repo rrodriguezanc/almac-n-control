@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 
 export interface Product {
   id: string;
@@ -26,49 +27,55 @@ export interface Movement {
   responsible: string;
 }
 
-const initialProducts: Product[] = [
-  { id: "1", name: "Tornillos M8x30", sku: "TRN-001", category: "Ferretería", subCategory: "Tornillería", stock: 1500, minStock: 200, unit: "pzas", location: "A-01", lastPrice: 0.5, lastPurchaseDate: "2026-02-01" },
-  { id: "2", name: "Aceite Hidráulico 20L", sku: "ACE-010", category: "Lubricantes", subCategory: "Aceites", stock: 45, minStock: 10, unit: "bidones", location: "B-03", lastPrice: 120, lastPurchaseDate: "2026-01-15" },
-];
-
-const initialMovements: Movement[] = [
-  { id: "m1", productId: "1", productName: "Tornillos M8x30", type: "entrada", quantity: 500, date: "2026-02-21T08:30:00", note: "Orden de compra #1234", responsible: "Carlos M." },
-];
-
 export function useInventory() {
-  const [products, setProducts] = useState<Product[]>(() => {
-    const saved = localStorage.getItem("inventory_products");
-    return saved ? JSON.parse(saved) : initialProducts;
-  });
+  const [products, setProducts] = useState<Product[]>([]);
+  const [movements, setMovements] = useState<Movement[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [movements, setMovements] = useState<Movement[]>(() => {
-    const saved = localStorage.getItem("inventory_movements");
-    return saved ? JSON.parse(saved) : initialMovements;
-  });
+  // Fetch products from Supabase
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('productos')
+        .select('*');
+
+      if (error) throw error;
+
+      if (data) {
+        const mappedProducts: Product[] = data.map((p: any) => ({
+          id: String(p.id),
+          sku: String(p.numero_articulo || ""),
+          name: String(p.descripcion_articulo || "Sin nombre"),
+          stock: Number(p.en_stock || 0),
+          minStock: Number(p.min_stock || 0),
+          unit: String(p.unidad_medida || "pzas"),
+          category: String(p.clase_descripcion || "General"),
+          subCategory: String(p.sub_clase_descripcion || ""),
+          location: String(p.ubicacion || "N/A"),
+          lastPrice: Number(p.ultimo_precio_compra || p.ultimo_precio_determinado || 0),
+          lastPurchaseDate: String(p.ultima_fecha_compra || ""),
+          status: p.inactivo ? "Inactivo" : "Activo"
+        }));
+        setProducts(mappedProducts);
+      }
+    } catch (e) {
+      console.error("Error al cargar productos de Supabase:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    try {
-      localStorage.setItem("inventory_products", JSON.stringify(products));
-    } catch (e) {
-      if (e instanceof DOMException && e.name === "QuotaExceededError") {
-        console.error("Error: Límite de almacenamiento excedido (localStorage). El inventario es demasiado grande para guardarse en el navegador.");
-      }
-    }
-  }, [products]);
+    fetchProducts();
 
-  useEffect(() => {
-    try {
-      localStorage.setItem("inventory_movements", JSON.stringify(movements));
-    } catch (e) {
-      if (e instanceof DOMException && e.name === "QuotaExceededError") {
-        console.error("Error: Límite de almacenamiento excedido para movimientos.");
-      }
-    }
-  }, [movements]);
+    // For now we still use localStorage for movements since they are simpler, 
+    // or you can also move them to a 'movimientos' table later
+    const savedMovements = localStorage.getItem("inventory_movements");
+    if (savedMovements) setMovements(JSON.parse(savedMovements));
+  }, []);
 
-  const generateId = () => Math.random().toString(36).substr(2, 9);
-
-  const addMovement = (
+  const addMovement = async (
     productId: string,
     type: "entrada" | "salida",
     quantity: number,
@@ -81,38 +88,95 @@ export function useInventory() {
 
     const newStock = type === "entrada" ? product.stock + quantity : product.stock - quantity;
 
-    setProducts((prev) =>
-      prev.map((p) => (p.id === productId ? { ...p, stock: newStock } : p))
-    );
-
-    const movement: Movement = {
-      id: generateId(),
-      productId,
-      productName: product.name,
-      type,
-      quantity,
-      date: new Date().toISOString(),
-      note,
-      responsible,
-    };
-
-    setMovements((prev) => [movement, ...prev]);
-    return true;
-  };
-
-  const addProduct = (product: Omit<Product, "id">) => {
-    setProducts((prev) => [...prev, { ...product, id: generateId() }]);
-  };
-
-  const importProducts = (newProducts: Product[]) => {
+    // Update stock in Supabase
     try {
-      setProducts(newProducts);
-      setMovements([]);
-      localStorage.setItem("inventory_products", JSON.stringify(newProducts));
-      localStorage.setItem("inventory_movements", JSON.stringify([]));
+      const { error } = await supabase
+        .from('productos')
+        .update({ en_stock: newStock })
+        .eq('id', productId);
+
+      if (error) throw error;
+
+      setProducts((prev) =>
+        prev.map((p) => (p.id === productId ? { ...p, stock: newStock } : p))
+      );
+
+      const movement: Movement = {
+        id: Math.random().toString(36).substr(2, 9),
+        productId,
+        productName: product.name,
+        type,
+        quantity,
+        date: new Date().toISOString(),
+        note,
+        responsible,
+      };
+
+      const updatedMovements = [movement, ...movements];
+      setMovements(updatedMovements);
+      localStorage.setItem("inventory_movements", JSON.stringify(updatedMovements));
       return true;
     } catch (e) {
-      console.error("Error al importar: archivo demasiado grande para localStorage");
+      console.error("Error al actualizar stock:", e);
+      return false;
+    }
+  };
+
+  const addProduct = async (product: Omit<Product, "id">) => {
+    try {
+      const { data, error } = await supabase
+        .from('productos')
+        .insert([{
+          numero_articulo: product.sku,
+          descripcion_articulo: product.name,
+          clase_descripcion: product.category,
+          sub_clase_descripcion: product.subCategory,
+          en_stock: product.stock,
+          unidad_medida: product.unit,
+          ubicacion: product.location,
+          ultimo_precio_compra: product.lastPrice,
+          ultima_fecha_compra: product.lastPurchaseDate,
+          inactivo: product.status === "Inactivo"
+        }])
+        .select();
+
+      if (error) throw error;
+      fetchProducts(); // Refresh list
+    } catch (e) {
+      console.error("Error al añadir producto:", e);
+    }
+  };
+
+  const importProducts = async (newProducts: Product[]) => {
+    try {
+      setLoading(true);
+      // Delete existing products if you want a full replacement, 
+      // or use upsert if you want to update existing products
+
+      const toInsert = newProducts.map(p => ({
+        numero_articulo: p.sku,
+        descripcion_articulo: p.name,
+        clase_descripcion: p.category,
+        sub_clase_descripcion: p.subCategory,
+        en_stock: p.stock,
+        unidad_medida: p.unit,
+        ubicacion: p.location,
+        ultimo_precio_compra: p.lastPrice,
+        ultima_fecha_compra: p.lastPurchaseDate,
+        inactivo: p.status === "Inactivo"
+      }));
+
+      // NOTE: For safety, let's keep it simple. You might need to adjust based on table constraints.
+      const { error } = await supabase
+        .from('productos')
+        .upsert(toInsert, { onConflict: 'numero_articulo' });
+
+      if (error) throw error;
+
+      fetchProducts();
+      return true;
+    } catch (e) {
+      console.error("Error al importar a Supabase:", e);
       return false;
     }
   };
@@ -131,6 +195,7 @@ export function useInventory() {
   return {
     products,
     movements,
+    loading,
     addMovement,
     addProduct,
     importProducts,
@@ -142,4 +207,5 @@ export function useInventory() {
     },
   };
 }
+
 
