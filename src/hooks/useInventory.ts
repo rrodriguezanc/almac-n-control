@@ -36,29 +36,49 @@ export function useInventory() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('productos')
-        .select('*');
+      let allData: any[] = [];
+      let from = 0;
+      const pageSize = 1000;
+      let hasMore = true;
 
-      if (error) throw error;
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('productos')
+          .select('*')
+          .range(from, from + pageSize - 1);
 
-      if (data) {
-        const mappedProducts: Product[] = data.map((p: any) => ({
-          id: String(p.id),
-          sku: String(p.numero_articulo || ""),
-          name: String(p.descripcion_articulo || "Sin nombre"),
-          stock: Number(p.en_stock || 0),
-          minStock: Number(p.min_stock || 0),
-          unit: String(p.unidad_medida || "pzas"),
-          category: String(p.clase_descripcion || "General"),
-          subCategory: String(p.sub_clase_descripcion || ""),
-          location: String(p.ubicacion || "N/A"),
-          lastPrice: Number(p.ultimo_precio_compra || p.ultimo_precio_determinado || 0),
-          lastPurchaseDate: String(p.ultima_fecha_compra || ""),
-          status: p.inactivo ? "Inactivo" : "Activo"
-        }));
-        setProducts(mappedProducts);
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          allData = [...allData, ...data];
+          from += pageSize;
+          // Si recibimos menos del tamaño de página, es que ya no hay más
+          if (data.length < pageSize) {
+            hasMore = false;
+          }
+        } else {
+          hasMore = false;
+        }
+
+        // Límite de seguridad para evitar bucles infinitos
+        if (from > 50000) break;
       }
+
+      const mappedProducts: Product[] = allData.map((p: any) => ({
+        id: String(p.id),
+        sku: String(p.numero_articulo || ""),
+        name: String(p.descripcion_articulo || "Sin nombre"),
+        stock: Number(p.en_stock || 0),
+        minStock: Number(p.min_stock || 0),
+        unit: String(p.unidad_medida || "pzas"),
+        category: String(p.clase_descripcion || "General"),
+        subCategory: String(p.sub_clase_descripcion || ""),
+        location: String(p.ubicacion || "N/A"),
+        lastPrice: Number(p.ultimo_precio_compra || p.ultimo_precio_determinado || 0),
+        lastPurchaseDate: String(p.ultima_fecha_compra || ""),
+        status: p.inactivo ? "Inactivo" : "Activo"
+      }));
+      setProducts(mappedProducts);
     } catch (e) {
       console.error("Error al cargar productos de Supabase:", e);
     } finally {
