@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Product } from "../hooks/useInventory";
 import { AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "./ui/button";
@@ -10,6 +10,11 @@ interface InventoryTableProps {
 export function InventoryTable({ products }: InventoryTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 50;
+
+  // Reset page to 1 when products list changes (e.g. on search)
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [products]);
 
   const totalPages = Math.ceil(products.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;

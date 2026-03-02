@@ -4,14 +4,21 @@ import { StatsCards } from "../components/StatsCards";
 import { InventoryTable } from "../components/InventoryTable";
 import { MovementForm } from "../components/MovementForm";
 import { MovementHistory } from "../components/MovementHistory";
-import { ImportExcel } from "../components/ImportExcel";
-import { Warehouse, LayoutDashboard, Package, ArrowLeftRight, History } from "lucide-react";
+import { Warehouse, LayoutDashboard, Package, ArrowLeftRight, History, Search } from "lucide-react";
+import { Input } from "../components/ui/input";
 
 type Tab = "dashboard" | "inventario" | "movimiento" | "historial";
 
 const Index = () => {
   const { products, movements, addMovement, addProduct, importProducts, stats, loading } = useInventory();
   const [tab, setTab] = useState<Tab>("dashboard");
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredProducts = products.filter(
+    (p) =>
+      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.sku.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -78,8 +85,16 @@ const Index = () => {
             {
               tab === "inventario" && (
                 <div className="space-y-6">
-                  <ImportExcel onImport={importProducts} />
-                  <InventoryTable products={products} />
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar por nombre o código (SKU)..."
+                      className="pl-10"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  <InventoryTable products={filteredProducts} />
                 </div>
               )
             }
