@@ -148,7 +148,9 @@ export function MovementForm({ products, internalProducts, onSubmit }: MovementF
                 >
                   <span className="font-bold text-sm">{p.sku}</span>
                   <span className="text-xs text-muted-foreground truncate">{p.name}</span>
-                  <span className="text-[10px] font-bold text-primary">Stock act: {p.stock}</span>
+                  {type === "salida" && (
+                    <span className="text-[10px] font-bold text-primary">Stock act: {p.stock}</span>
+                  )}
                 </div>
               ))}
             </div>

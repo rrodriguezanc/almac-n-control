@@ -133,51 +133,71 @@ export function useInventory() {
     note: string,
     responsible: string
   ) => {
-    // 1. Find product in internal or general depending on type
-    let product = internalProducts.find((p) => p.id === productId);
-    let isFromGeneral = false;
+    // 1. Find product based on type and warehouse
+    let productToUpdate: Product | undefined;
+    let isNewToInternal = false;
 
-    if (!product && type === "entrada") {
-      product = products.find((p) => p.id === productId);
-      isFromGeneral = true;
+    if (type === "salida") {
+      productToUpdate = internalProducts.find((p) => p.id === productId);
+    } else {
+      // type === "entrada"
+      // First, see if the selected ID exists in internal
+      productToUpdate = internalProducts.find((p) => p.id === productId);
+
+      // If not, it might be a General Product ID being brought in
+      if (!productToUpdate) {
+        const genProduct = products.find((p) => p.id === productId);
+        if (genProduct) {
+          // Check if this SKU already exists in internal (under a different ID)
+          const existingInternal = internalProducts.find(p => p.sku === genProduct.sku);
+          if (existingInternal) {
+            productToUpdate = existingInternal;
+          } else {
+            productToUpdate = genProduct;
+            isNewToInternal = true;
+          }
+        }
+      }
     }
 
-    if (!product) return false;
-    if (type === "salida" && product.stock < quantity) return false;
+    if (!productToUpdate) return false;
+    if (type === "salida" && productToUpdate.stock < quantity) return false;
 
-    const currentStock = isFromGeneral ? 0 : product.stock;
-    const newStock = type === "entrada" ? currentStock + quantity : currentStock - quantity;
+    // Ignore general stock: if new, starting balance is 0. If existing internal, use its current balance.
+    const currentInternalStock = isNewToInternal ? 0 : productToUpdate.stock;
+    const newStock = type === "entrada" ? currentInternalStock + quantity : currentInternalStock - quantity;
 
     try {
-      if (isFromGeneral) {
-        // Create in internal if it doesn't exist
+      if (isNewToInternal) {
+        // Create new record in internal warehouse using general data but 0 initial stock
         const { error } = await supabase
           .from('productos_internos')
           .insert([{
-            numero_articulo: product.sku,
-            descripcion: product.name,
+            numero_articulo: productToUpdate.sku,
+            descripcion: productToUpdate.name,
             stock_actual: newStock,
-            unidad_medida: product.unit,
-            zona: product.location
+            unidad_medida: productToUpdate.unit,
+            zona: productToUpdate.location
           }]);
         if (error) throw error;
         await fetchInternalProducts();
       } else {
-        // Update existing internal
+        // Update existing internal record
         const { error } = await supabase
           .from('productos_internos')
           .update({ stock_actual: newStock })
-          .eq('id', product.id);
+          .eq('id', productToUpdate.id);
         if (error) throw error;
+
         setInternalProducts(prev =>
-          prev.map(p => p.id === productId ? { ...p, stock: newStock } : p)
+          prev.map(p => p.id === productToUpdate!.id ? { ...p, stock: newStock } : p)
         );
       }
 
       const m: Movement = {
         id: Math.random().toString(36).substr(2, 9),
         productId,
-        productName: product.name,
+        productName: productToUpdate.name,
         type,
         quantity,
         date: new Date().toISOString(),
