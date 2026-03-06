@@ -29,6 +29,7 @@ export interface Movement {
 
 export function useInventory() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [internalProducts, setInternalProducts] = useState<Product[]>([]);
   const [movements, setMovements] = useState<Movement[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -86,11 +87,41 @@ export function useInventory() {
     }
   };
 
-  useEffect(() => {
-    fetchProducts();
+  const fetchInternalProducts = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('productos_internos')
+        .select('*');
 
-    // For now we still use localStorage for movements since they are simpler, 
-    // or you can also move them to a 'movimientos' table later
+      if (error) throw error;
+      if (data) {
+        const mapped = data.map((p: any) => ({
+          id: String(p.id),
+          sku: String(p.numero_articulo || ""),
+          name: String(p.descripcion || "Sin nombre"),
+          stock: Number(p.stock_actual !== undefined ? p.stock_actual : p.en_stock || 0),
+          minStock: 0,
+          unit: String(p.unidad_medida || "pzas"),
+          category: "Interno",
+          location: String(p.zona || "N/A"),
+          status: "Activo"
+        }));
+        setInternalProducts(mapped);
+      }
+    } catch (e) {
+      console.error("Error productos internos:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const init = async () => {
+      await Promise.all([fetchProducts(), fetchInternalProducts()]);
+    };
+    init();
+
     const savedMovements = localStorage.getItem("inventory_movements");
     if (savedMovements) setMovements(JSON.parse(savedMovements));
   }, []);
@@ -102,26 +133,26 @@ export function useInventory() {
     note: string,
     responsible: string
   ) => {
-    const product = products.find((p) => p.id === productId);
+    // Now targeting internalProducts as requested
+    const product = internalProducts.find((p) => p.id === productId);
     if (!product) return false;
     if (type === "salida" && product.stock < quantity) return false;
 
     const newStock = type === "entrada" ? product.stock + quantity : product.stock - quantity;
 
-    // Update stock in Supabase
     try {
       const { error } = await supabase
-        .from('productos')
-        .update({ en_stock: newStock })
+        .from('productos_internos')
+        .update({ stock_actual: newStock })
         .eq('id', productId);
 
       if (error) throw error;
 
-      setProducts((prev) =>
-        prev.map((p) => (p.id === productId ? { ...p, stock: newStock } : p))
+      setInternalProducts(prev =>
+        prev.map(p => p.id === productId ? { ...p, stock: newStock } : p)
       );
 
-      const movement: Movement = {
+      const m: Movement = {
         id: Math.random().toString(36).substr(2, 9),
         productId,
         productName: product.name,
@@ -132,88 +163,66 @@ export function useInventory() {
         responsible,
       };
 
-      const updatedMovements = [movement, ...movements];
-      setMovements(updatedMovements);
-      localStorage.setItem("inventory_movements", JSON.stringify(updatedMovements));
+      const updated = [m, ...movements];
+      setMovements(updated);
+      localStorage.setItem("inventory_movements", JSON.stringify(updated));
       return true;
     } catch (e) {
-      console.error("Error al actualizar stock:", e);
+      console.error("Error stock interno:", e);
       return false;
     }
   };
 
   const addProduct = async (product: Omit<Product, "id">) => {
     try {
-      const { data, error } = await supabase
-        .from('productos')
+      const { error } = await supabase
+        .from('productos_internos')
         .insert([{
           numero_articulo: product.sku,
-          descripcion_articulo: product.name,
-          clase_descripcion: product.category,
-          sub_clase_descripcion: product.subCategory,
-          en_stock: product.stock,
+          descripcion: product.name,
+          stock_actual: product.stock,
           unidad_medida: product.unit,
-          ubicacion: product.location,
-          ultimo_precio_compra: product.lastPrice,
-          ultima_fecha_compra: product.lastPurchaseDate,
-          inactivo: product.status === "Inactivo"
-        }])
-        .select();
-
+          zona: product.location
+        }]);
       if (error) throw error;
-      fetchProducts(); // Refresh list
+      fetchInternalProducts();
     } catch (e) {
-      console.error("Error al añadir producto:", e);
+      console.error("Error añadir interno:", e);
     }
   };
 
   const importProducts = async (newProducts: Product[]) => {
     try {
       setLoading(true);
-      // Delete existing products if you want a full replacement, 
-      // or use upsert if you want to update existing products
-
       const toInsert = newProducts.map(p => ({
         numero_articulo: p.sku,
-        descripcion_articulo: p.name,
-        clase_descripcion: p.category,
-        sub_clase_descripcion: p.subCategory,
-        en_stock: p.stock,
+        descripcion: p.name,
+        stock_actual: p.stock,
         unidad_medida: p.unit,
-        ubicacion: p.location,
-        ultimo_precio_compra: p.lastPrice,
-        ultima_fecha_compra: p.lastPurchaseDate,
-        inactivo: p.status === "Inactivo"
+        zona: p.location
       }));
 
-      // NOTE: For safety, let's keep it simple. You might need to adjust based on table constraints.
       const { error } = await supabase
-        .from('productos')
+        .from('productos_internos')
         .upsert(toInsert, { onConflict: 'numero_articulo' });
 
       if (error) throw error;
-
-      fetchProducts();
+      fetchInternalProducts();
       return true;
     } catch (e) {
-      console.error("Error al importar a Supabase:", e);
+      console.error("Error importar interno:", e);
       return false;
     }
   };
 
   const today = new Date().toISOString().split('T')[0];
-  const todayEntries = movements.filter(
-    (m) => m.type === "entrada" && m.date.startsWith(today)
-  ).length;
-
-  const todayExits = movements.filter(
-    (m) => m.type === "salida" && m.date.startsWith(today)
-  ).length;
-
-  const lowStockCount = products.filter((p) => p.stock <= p.minStock).length;
+  const todayEntries = movements.filter(m => m.type === "entrada" && m.date.startsWith(today)).length;
+  const todayExits = movements.filter(m => m.type === "salida" && m.date.startsWith(today)).length;
+  const lowStockCount = internalProducts.filter(p => p.stock <= p.minStock).length;
 
   return {
     products,
+    internalProducts,
     movements,
     loading,
     addMovement,
@@ -221,6 +230,7 @@ export function useInventory() {
     importProducts,
     stats: {
       totalProducts: products.length,
+      totalInternal: internalProducts.length,
       todayEntries,
       todayExits,
       lowStockCount,
