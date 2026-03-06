@@ -99,7 +99,7 @@ export function MovementForm({ products, internalProducts, onSubmit }: MovementF
               : "text-muted-foreground hover:bg-white/50"
               }`}
           >
-            <ArrowDownToLine className="h-4 w-4" /> Ingreso (Gral)
+            <ArrowDownToLine className="h-4 w-4" /> Ingreso
           </button>
           <button
             type="button"
