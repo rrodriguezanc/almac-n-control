@@ -113,7 +113,7 @@ const Index = () => {
                       />
                     </div>
                   </div>
-                  <InventoryTable products={filteredGeneral} />
+                  <InventoryTable products={filteredGeneral} variant="general" />
                 </div>
               )
             }

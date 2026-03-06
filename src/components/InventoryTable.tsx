@@ -5,9 +5,10 @@ import { Button } from "./ui/button";
 
 interface InventoryTableProps {
   products: Product[];
+  variant?: "general" | "interno";
 }
 
-export function InventoryTable({ products }: InventoryTableProps) {
+export function InventoryTable({ products, variant = "interno" }: InventoryTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 50;
 
@@ -27,8 +28,14 @@ export function InventoryTable({ products }: InventoryTableProps) {
     <div className="bg-card rounded-lg border animate-fade-in shadow-sm overflow-hidden">
       <div className="p-5 border-b flex items-center justify-between bg-card/50">
         <div>
-          <h2 className="text-lg font-semibold">Inventario Actual</h2>
-          <p className="text-sm text-muted-foreground">Estado del stock en tiempo real ({products.length} productos)</p>
+          <h2 className="text-lg font-semibold">
+            {variant === "general" ? "Catálogo General de Artículos" : "Inventario Almacén Interno"}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {variant === "general"
+              ? `Base de datos maestra (${products.length} productos)`
+              : `Estado del stock en tiempo real (${products.length} productos)`}
+          </p>
         </div>
         <div className="flex items-center gap-4">
           <div className="text-xs text-muted-foreground font-medium">
@@ -65,9 +72,13 @@ export function InventoryTable({ products }: InventoryTableProps) {
               <th className="text-left p-3 font-semibold">Categoría</th>
               <th className="text-left p-3 font-semibold">Subcategoría</th>
               <th className="text-left p-3 font-semibold">Ubicación</th>
-              <th className="text-right p-3 font-semibold">Stock</th>
-              <th className="text-right p-3 font-semibold">Precio</th>
-              <th className="text-center p-3 font-semibold">Estado</th>
+              {variant === "interno" && (
+                <>
+                  <th className="text-right p-3 font-semibold">Stock</th>
+                  <th className="text-right p-3 font-semibold">Precio</th>
+                  <th className="text-center p-3 font-semibold">Estado</th>
+                </>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -80,23 +91,27 @@ export function InventoryTable({ products }: InventoryTableProps) {
                   <td className="p-3 text-muted-foreground whitespace-nowrap">{p.category}</td>
                   <td className="p-3 text-muted-foreground whitespace-nowrap">{p.subCategory}</td>
                   <td className="p-3 font-mono text-xs">{p.location}</td>
-                  <td className="p-3 text-right font-semibold tabular-nums">
-                    {p.stock} <span className="text-muted-foreground font-normal">{p.unit}</span>
-                  </td>
-                  <td className="p-3 text-right text-muted-foreground tabular-nums">
-                    {p.lastPrice ? `$${p.lastPrice.toLocaleString()}` : "-"}
-                  </td>
-                  <td className="p-3 text-center">
-                    {isLow ? (
-                      <span className="inline-flex items-center gap-1 text-xs font-medium bg-destructive/10 text-destructive px-2 py-0.5 rounded-full">
-                        <AlertTriangle className="h-3 w-3" /> Bajo
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center text-xs font-medium bg-success/10 text-success px-2 py-0.5 rounded-full">
-                        OK
-                      </span>
-                    )}
-                  </td>
+                  {variant === "interno" && (
+                    <>
+                      <td className="p-3 text-right font-semibold tabular-nums">
+                        {p.stock} <span className="text-muted-foreground font-normal">{p.unit}</span>
+                      </td>
+                      <td className="p-3 text-right text-muted-foreground tabular-nums">
+                        {p.lastPrice ? `$${p.lastPrice.toLocaleString()}` : "-"}
+                      </td>
+                      <td className="p-3 text-center">
+                        {isLow ? (
+                          <span className="inline-flex items-center gap-1 text-xs font-medium bg-destructive/10 text-destructive px-2 py-0.5 rounded-full">
+                            <AlertTriangle className="h-3 w-3" /> Bajo
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center text-xs font-medium bg-success/10 text-success px-2 py-0.5 rounded-full">
+                            OK
+                          </span>
+                        )}
+                      </td>
+                    </>
+                  )}
                 </tr>
               );
             })}
