@@ -133,24 +133,46 @@ export function useInventory() {
     note: string,
     responsible: string
   ) => {
-    // Now targeting internalProducts as requested
-    const product = internalProducts.find((p) => p.id === productId);
+    // 1. Find product in internal or general depending on type
+    let product = internalProducts.find((p) => p.id === productId);
+    let isFromGeneral = false;
+
+    if (!product && type === "entrada") {
+      product = products.find((p) => p.id === productId);
+      isFromGeneral = true;
+    }
+
     if (!product) return false;
     if (type === "salida" && product.stock < quantity) return false;
 
-    const newStock = type === "entrada" ? product.stock + quantity : product.stock - quantity;
+    const currentStock = isFromGeneral ? 0 : product.stock;
+    const newStock = type === "entrada" ? currentStock + quantity : currentStock - quantity;
 
     try {
-      const { error } = await supabase
-        .from('productos_internos')
-        .update({ stock_actual: newStock })
-        .eq('id', productId);
-
-      if (error) throw error;
-
-      setInternalProducts(prev =>
-        prev.map(p => p.id === productId ? { ...p, stock: newStock } : p)
-      );
+      if (isFromGeneral) {
+        // Create in internal if it doesn't exist
+        const { error } = await supabase
+          .from('productos_internos')
+          .insert([{
+            numero_articulo: product.sku,
+            descripcion: product.name,
+            stock_actual: newStock,
+            unidad_medida: product.unit,
+            zona: product.location
+          }]);
+        if (error) throw error;
+        await fetchInternalProducts();
+      } else {
+        // Update existing internal
+        const { error } = await supabase
+          .from('productos_internos')
+          .update({ stock_actual: newStock })
+          .eq('id', product.id);
+        if (error) throw error;
+        setInternalProducts(prev =>
+          prev.map(p => p.id === productId ? { ...p, stock: newStock } : p)
+        );
+      }
 
       const m: Movement = {
         id: Math.random().toString(36).substr(2, 9),

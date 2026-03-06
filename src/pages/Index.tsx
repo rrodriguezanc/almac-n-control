@@ -145,7 +145,11 @@ const Index = () => {
                     <h2 className="text-2xl font-bold tracking-tight">Registrar Movimiento</h2>
                     <p className="text-muted-foreground">Las entradas y salidas afectan al Almacén Interno</p>
                   </div>
-                  <MovementForm products={internalProducts} onSubmit={addMovement} />
+                  <MovementForm
+                    products={products}
+                    internalProducts={internalProducts}
+                    onSubmit={addMovement}
+                  />
                 </div>
               )
             }
