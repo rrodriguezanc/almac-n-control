@@ -30,6 +30,7 @@ export interface Movement {
 export function useInventory() {
   const [products, setProducts] = useState<Product[]>([]);
   const [internalProducts, setInternalProducts] = useState<Product[]>([]);
+  const [electricalProducts, setElectricalProducts] = useState<Product[]>([]);
   const [movements, setMovements] = useState<Movement[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -90,13 +91,10 @@ export function useInventory() {
   const fetchInternalProducts = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('productos_internos')
-        .select('*');
-
+      const { data, error } = await supabase.from('productos_internos').select('*');
       if (error) throw error;
       if (data) {
-        const mapped = data.map((p: any) => ({
+        setInternalProducts(data.map((p: any) => ({
           id: String(p.id),
           sku: String(p.numero_articulo || ""),
           name: String(p.descripcion || "Sin nombre"),
@@ -106,8 +104,7 @@ export function useInventory() {
           category: "Interno",
           location: String(p.zona || "N/A"),
           status: "Activo"
-        }));
-        setInternalProducts(mapped);
+        })));
       }
     } catch (e) {
       console.error("Error productos internos:", e);
@@ -116,9 +113,34 @@ export function useInventory() {
     }
   };
 
+  const fetchElectricalProducts = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase.from('productos_internos_electricos').select('*');
+      if (error) throw error;
+      if (data) {
+        setElectricalProducts(data.map((p: any) => ({
+          id: String(p.id),
+          sku: String(p.numero_articulo || ""),
+          name: String(p.descripcion || "Sin nombre"),
+          stock: Number(p.stock_actual !== undefined ? p.stock_actual : p.en_stock || 0),
+          minStock: 0,
+          unit: String(p.unidad_medida || "pzas"),
+          category: "Eléctrico",
+          location: String(p.zona || "N/A"),
+          status: "Activo"
+        })));
+      }
+    } catch (e) {
+      console.error("Error productos eléctricos:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     const init = async () => {
-      await Promise.all([fetchProducts(), fetchInternalProducts()]);
+      await Promise.all([fetchProducts(), fetchInternalProducts(), fetchElectricalProducts()]);
     };
     init();
 
@@ -131,30 +153,30 @@ export function useInventory() {
     type: "entrada" | "salida",
     quantity: number,
     note: string,
-    responsible: string
+    responsible: string,
+    warehouse: "interno" | "electrico" = "interno"
   ) => {
-    // 1. Find product based on type and warehouse
+    const tableName = warehouse === "interno" ? 'productos_internos' : 'productos_internos_electricos';
+    const currentProducts = warehouse === "interno" ? internalProducts : electricalProducts;
+    const setState = warehouse === "interno" ? setInternalProducts : setElectricalProducts;
+    const fetcher = warehouse === "interno" ? fetchInternalProducts : fetchElectricalProducts;
+
     let productToUpdate: Product | undefined;
-    let isNewToInternal = false;
+    let isNewToWarehouse = false;
 
     if (type === "salida") {
-      productToUpdate = internalProducts.find((p) => p.id === productId);
+      productToUpdate = currentProducts.find((p) => p.id === productId);
     } else {
-      // type === "entrada"
-      // First, see if the selected ID exists in internal
-      productToUpdate = internalProducts.find((p) => p.id === productId);
-
-      // If not, it might be a General Product ID being brought in
+      productToUpdate = currentProducts.find((p) => p.id === productId);
       if (!productToUpdate) {
         const genProduct = products.find((p) => p.id === productId);
         if (genProduct) {
-          // Check if this SKU already exists in internal (under a different ID)
-          const existingInternal = internalProducts.find(p => p.sku === genProduct.sku);
-          if (existingInternal) {
-            productToUpdate = existingInternal;
+          const existing = currentProducts.find(p => p.sku === genProduct.sku);
+          if (existing) {
+            productToUpdate = existing;
           } else {
             productToUpdate = genProduct;
-            isNewToInternal = true;
+            isNewToWarehouse = true;
           }
         }
       }
@@ -163,15 +185,13 @@ export function useInventory() {
     if (!productToUpdate) return false;
     if (type === "salida" && productToUpdate.stock < quantity) return false;
 
-    // Ignore general stock: if new, starting balance is 0. If existing internal, use its current balance.
-    const currentInternalStock = isNewToInternal ? 0 : productToUpdate.stock;
-    const newStock = type === "entrada" ? currentInternalStock + quantity : currentInternalStock - quantity;
+    const currentBalance = isNewToWarehouse ? 0 : productToUpdate.stock;
+    const newStock = type === "entrada" ? currentBalance + quantity : currentBalance - quantity;
 
     try {
-      if (isNewToInternal) {
-        // Create new record in internal warehouse using general data but 0 initial stock
+      if (isNewToWarehouse) {
         const { error } = await supabase
-          .from('productos_internos')
+          .from(tableName)
           .insert([{
             numero_articulo: productToUpdate.sku,
             descripcion: productToUpdate.name,
@@ -180,24 +200,20 @@ export function useInventory() {
             zona: productToUpdate.location
           }]);
         if (error) throw error;
-        await fetchInternalProducts();
+        await fetcher();
       } else {
-        // Update existing internal record
         const { error } = await supabase
-          .from('productos_internos')
+          .from(tableName)
           .update({ stock_actual: newStock })
           .eq('id', productToUpdate.id);
         if (error) throw error;
-
-        setInternalProducts(prev =>
-          prev.map(p => p.id === productToUpdate!.id ? { ...p, stock: newStock } : p)
-        );
+        setState(prev => prev.map(p => p.id === productToUpdate!.id ? { ...p, stock: newStock } : p));
       }
 
       const m: Movement = {
         id: Math.random().toString(36).substr(2, 9),
         productId,
-        productName: productToUpdate.name,
+        productName: `${productToUpdate.name} (${warehouse === 'interno' ? 'Gral' : 'Elec'})`,
         type,
         quantity,
         date: new Date().toISOString(),
@@ -210,7 +226,7 @@ export function useInventory() {
       localStorage.setItem("inventory_movements", JSON.stringify(updated));
       return true;
     } catch (e) {
-      console.error("Error stock interno:", e);
+      console.error(`Error stock ${warehouse}:`, e);
       return false;
     }
   };
@@ -260,11 +276,12 @@ export function useInventory() {
   const today = new Date().toISOString().split('T')[0];
   const todayEntries = movements.filter(m => m.type === "entrada" && m.date.startsWith(today)).length;
   const todayExits = movements.filter(m => m.type === "salida" && m.date.startsWith(today)).length;
-  const lowStockCount = internalProducts.filter(p => p.stock <= p.minStock).length;
+  const lowStockCount = [...internalProducts, ...electricalProducts].filter(p => p.stock <= p.minStock).length;
 
   return {
     products,
     internalProducts,
+    electricalProducts,
     movements,
     loading,
     addMovement,
@@ -273,6 +290,7 @@ export function useInventory() {
     stats: {
       totalProducts: products.length,
       totalInternal: internalProducts.length,
+      totalElectrical: electricalProducts.length,
       todayEntries,
       todayExits,
       lowStockCount,

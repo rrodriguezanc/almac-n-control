@@ -8,17 +8,20 @@ import { ArrowDownToLine, ArrowUpFromLine, Search, CheckCircle2 } from "lucide-r
 interface MovementFormProps {
   products: Product[];
   internalProducts: Product[];
+  electricalProducts: Product[];
   onSubmit: (
     productId: string,
     type: "entrada" | "salida",
     quantity: number,
     note: string,
-    responsible: string
+    responsible: string,
+    warehouse: "interno" | "electrico"
   ) => Promise<boolean>;
 }
 
-export function MovementForm({ products, internalProducts, onSubmit }: MovementFormProps) {
+export function MovementForm({ products, internalProducts, electricalProducts, onSubmit }: MovementFormProps) {
   const [type, setType] = useState<"entrada" | "salida">("entrada");
+  const [warehouse, setWarehouse] = useState<"interno" | "electrico">("interno");
   const [productId, setProductId] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [quantity, setQuantity] = useState("");
@@ -28,8 +31,18 @@ export function MovementForm({ products, internalProducts, onSubmit }: MovementF
   const [success, setSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Selector de lista de productos basado en el tipo de movimiento
-  const activeProductsSource = type === "entrada" ? products : internalProducts;
+  // Selector de lista de productos basado en el tipo de movimiento y almacén
+  const activeProductsSource = useMemo(() => {
+    const currentInternal = warehouse === "interno" ? internalProducts : electricalProducts;
+    if (type === "salida") return currentInternal;
+
+    // Para entrada, unimos la lista actual del almacén con el catálogo general para permitir traslados
+    // Filtrando por SKU para que no aparezcan duplicados si ya existe en el interno
+    const seenSkus = new Set(currentInternal.map(p => p.sku));
+    const uniqueGeneral = products.filter(p => !seenSkus.has(p.sku));
+
+    return [...currentInternal, ...uniqueGeneral];
+  }, [type, warehouse, internalProducts, electricalProducts, products]);
 
   const filteredItems = useMemo(() => {
     if (searchTerm.length < 2) return [];
@@ -61,13 +74,13 @@ export function MovementForm({ products, internalProducts, onSubmit }: MovementF
 
     try {
       setIsSubmitting(true);
-      const result = await onSubmit(productId, type, qty, note, responsible);
+      const result = await onSubmit(productId, type, qty, note, responsible, warehouse);
       if (!result) {
         setError("Error al registrar el movimiento. Verifica el stock o la conexión.");
         return;
       }
 
-      setSuccess(`${type === "entrada" ? "Entrada" : "Salida"} registrada correctamente.`);
+      setSuccess(`${type === "entrada" ? "Entrada" : "Salida"} en almacén ${warehouse === 'interno' ? 'Gral' : 'Elec'} registrada.`);
       setProductId("");
       setSearchTerm("");
       setQuantity("");
@@ -89,6 +102,33 @@ export function MovementForm({ products, internalProducts, onSubmit }: MovementF
       </div>
 
       <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        {/* Warehouse selection */}
+        <div className="space-y-2">
+          <Label className="text-xs font-bold uppercase tracking-wider">Almacén de Destino/Origen</Label>
+          <div className="flex p-1 bg-muted rounded-xl gap-1">
+            <button
+              type="button"
+              onClick={() => { setWarehouse("interno"); setProductId(""); setSearchTerm(""); }}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all ${warehouse === "interno"
+                ? "bg-white text-primary shadow-sm"
+                : "text-muted-foreground hover:bg-white/50"
+                }`}
+            >
+              Almacén Interno (Gral)
+            </button>
+            <button
+              type="button"
+              onClick={() => { setWarehouse("electrico"); setProductId(""); setSearchTerm(""); }}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all ${warehouse === "electrico"
+                ? "bg-white text-primary shadow-sm"
+                : "text-muted-foreground hover:bg-white/50"
+                }`}
+            >
+              Almacén Eléctrico
+            </button>
+          </div>
+        </div>
+
         {/* Type toggle */}
         <div className="flex p-1 bg-muted rounded-xl gap-1">
           <button
@@ -109,7 +149,7 @@ export function MovementForm({ products, internalProducts, onSubmit }: MovementF
               : "text-muted-foreground hover:bg-white/50"
               }`}
           >
-            <ArrowUpFromLine className="h-4 w-4" /> Salida (Interno)
+            <ArrowUpFromLine className="h-4 w-4" /> Salida
           </button>
         </div>
 
@@ -119,7 +159,7 @@ export function MovementForm({ products, internalProducts, onSubmit }: MovementF
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder={`Buscar en ${type === "entrada" ? "Stock General" : "Stock Interno"}...`}
+              placeholder={type === "entrada" ? "Buscar en catálogo general..." : `Buscar en Almacén ${warehouse === 'interno' ? 'Interno' : 'Eléctrico'}...`}
               className="pl-10 h-11"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
