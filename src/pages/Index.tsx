@@ -35,8 +35,8 @@ const Index = () => {
   const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "inventario", label: "Catálogo Gral", icon: Package },
-    { id: "interno", label: "Alm. Interno", icon: Warehouse },
-    { id: "electrico", label: "Alm. Eléctrico", icon: Warehouse },
+    { id: "interno", label: "Instrumentación", icon: Warehouse },
+    { id: "electrico", label: "Eléctrico", icon: Warehouse },
     { id: "movimiento", label: "Registrar", icon: ArrowLeftRight },
     { id: "historial", label: "Historial", icon: History },
   ];
@@ -101,7 +101,7 @@ const Index = () => {
                     <MovementHistory movements={movements} />
                   </div>
                   <div className="lg:col-span-1 space-y-4">
-                    <h3 className="text-xs font-black uppercase tracking-widest text-rose-600 bg-rose-50 w-fit px-2 py-1 rounded">Crítico Interno</h3>
+                    <h3 className="text-xs font-black uppercase tracking-widest text-rose-600 bg-rose-50 w-fit px-2 py-1 rounded">Crítico Instrumentación</h3>
                     <InventoryTable products={internalProducts.filter(p => p.stock <= p.minStock).slice(0, 10)} />
                   </div>
                   <div className="lg:col-span-1 space-y-4">
@@ -136,11 +136,11 @@ const Index = () => {
               tab === "interno" && (
                 <div className="space-y-6 animate-in fade-in duration-300">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <h2 className="text-2xl font-bold tracking-tight">Almacén Interno (Gral)</h2>
+                    <h2 className="text-2xl font-bold tracking-tight">Almacén de Instrumentación</h2>
                     <div className="relative w-full md:w-96">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
-                        placeholder="Buscar en almacén interno..."
+                        placeholder="Buscar en almacén instrumentación..."
                         className="pl-10 h-11 border-2 focus-visible:ring-primary"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}

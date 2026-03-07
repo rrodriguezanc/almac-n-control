@@ -213,7 +213,7 @@ export function useInventory() {
       const m: Movement = {
         id: Math.random().toString(36).substr(2, 9),
         productId,
-        productName: `${productToUpdate.name} (${warehouse === 'interno' ? 'Gral' : 'Elec'})`,
+        productName: `${productToUpdate.name} (${warehouse === 'interno' ? 'Inst' : 'Elec'})`,
         type,
         quantity,
         date: new Date().toISOString(),

@@ -80,7 +80,7 @@ export function MovementForm({ products, internalProducts, electricalProducts, o
         return;
       }
 
-      setSuccess(`${type === "entrada" ? "Entrada" : "Salida"} en almacén ${warehouse === 'interno' ? 'Gral' : 'Elec'} registrada.`);
+      setSuccess(`${type === "entrada" ? "Entrada" : "Salida"} en almacén ${warehouse === 'interno' ? 'Instrumentación' : 'Eléctrico'} registrada.`);
       setProductId("");
       setSearchTerm("");
       setQuantity("");
@@ -114,7 +114,7 @@ export function MovementForm({ products, internalProducts, electricalProducts, o
                 : "text-muted-foreground hover:bg-white/50"
                 }`}
             >
-              Almacén Interno (Gral)
+              Instrumentación
             </button>
             <button
               type="button"
@@ -159,7 +159,7 @@ export function MovementForm({ products, internalProducts, electricalProducts, o
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder={type === "entrada" ? "Buscar en catálogo general..." : `Buscar en Almacén ${warehouse === 'interno' ? 'Interno' : 'Eléctrico'}...`}
+              placeholder={type === "entrada" ? "Buscar en catálogo general..." : `Buscar en Almacén ${warehouse === 'interno' ? 'Instrumentación' : 'Eléctrico'}...`}
               className="pl-10 h-11"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}

@@ -19,7 +19,7 @@ export function StatsCards({ totalProducts, totalInternal, totalElectrical, toda
       bg: "bg-blue-50",
     },
     {
-      label: "Stock Interno",
+      label: "Stock Instrumentación",
       value: totalInternal,
       icon: Warehouse,
       color: "text-purple-600",
