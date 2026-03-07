@@ -29,7 +29,7 @@ const Index = () => {
   const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "inventario", label: "Almacén General", icon: Package },
-    { id: "interno", label: "Almacén Interno", icon: Warehouse },
+    { id: "interno", label: "Almacén Instrumentación", icon: Warehouse },
     { id: "movimiento", label: "Registrar", icon: ArrowLeftRight },
     { id: "historial", label: "Historial", icon: History },
   ];
