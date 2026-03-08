@@ -19,12 +19,13 @@ export interface Product {
 export interface Movement {
   id: string;
   productId: string;
-  productName: string;
+  productName?: string; // Para mostrar en el historial (buscado en memoria o join)
   type: "entrada" | "salida";
   quantity: number;
   date: string;
   note: string;
   responsible: string;
+  warehouse: "instrumentacion" | "electrico";
 }
 
 export function useInventory() {
@@ -138,14 +139,41 @@ export function useInventory() {
     }
   };
 
+  const fetchMovements = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('movimientos')
+        .select('*')
+        .order('date', { ascending: false });
+
+      if (error) throw error;
+      if (data) {
+        setMovements(data.map((m: any) => ({
+          id: m.id,
+          productId: m.product_id,
+          type: m.type,
+          quantity: Number(m.quantity),
+          date: m.date,
+          note: m.note || "",
+          responsible: m.responsible || "",
+          warehouse: m.warehouse
+        })));
+      }
+    } catch (e) {
+      console.error("Error al cargar movimientos:", e);
+    }
+  };
+
   useEffect(() => {
     const init = async () => {
-      await Promise.all([fetchProducts(), fetchInternalProducts(), fetchElectricalProducts()]);
+      await Promise.all([
+        fetchProducts(),
+        fetchInternalProducts(),
+        fetchElectricalProducts(),
+        fetchMovements()
+      ]);
     };
     init();
-
-    const savedMovements = localStorage.getItem("inventory_movements");
-    if (savedMovements) setMovements(JSON.parse(savedMovements));
   }, []);
 
   const addMovement = async (
@@ -154,18 +182,25 @@ export function useInventory() {
     quantity: number,
     note: string,
     responsible: string,
-    warehouse: "interno" | "electrico" = "interno"
+    warehouse: "instrumentacion" | "electrico" = "instrumentacion"
   ) => {
-    const tableName = warehouse === "interno" ? 'productos_internos' : 'productos_internos_electricos';
-    const currentProducts = warehouse === "interno" ? internalProducts : electricalProducts;
-    const setState = warehouse === "interno" ? setInternalProducts : setElectricalProducts;
-    const fetcher = warehouse === "interno" ? fetchInternalProducts : fetchElectricalProducts;
+    const tableName = warehouse === "instrumentacion" ? 'productos_internos' : 'productos_internos_electricos';
+    const currentProducts = warehouse === "instrumentacion" ? internalProducts : electricalProducts;
+    const setState = warehouse === "instrumentacion" ? setInternalProducts : setElectricalProducts;
+    const fetcher = warehouse === "instrumentacion" ? fetchInternalProducts : fetchElectricalProducts;
 
     let productToUpdate: Product | undefined;
     let isNewToWarehouse = false;
+    let masterProductId = "";
 
+    // 1. Resolver el producto y obtener su ID del catálogo maestro para la tabla de movimientos (FK)
     if (type === "salida") {
       productToUpdate = currentProducts.find((p) => p.id === productId);
+      if (productToUpdate) {
+        // Buscar el ID maestro buscando por SKU en la lista de productos generales
+        const genP = products.find(p => p.sku === productToUpdate!.sku);
+        masterProductId = genP ? genP.id : productId; // Si no hay match, usamos el ID que tenemos (asumiendo UUID)
+      }
     } else {
       productToUpdate = currentProducts.find((p) => p.id === productId);
       if (!productToUpdate) {
@@ -174,21 +209,27 @@ export function useInventory() {
           const existing = currentProducts.find(p => p.sku === genProduct.sku);
           if (existing) {
             productToUpdate = existing;
+            masterProductId = genProduct.id;
           } else {
             productToUpdate = genProduct;
+            masterProductId = genProduct.id;
             isNewToWarehouse = true;
           }
         }
+      } else {
+        const genP = products.find(p => p.sku === productToUpdate!.sku);
+        masterProductId = genP ? genP.id : productId;
       }
     }
 
-    if (!productToUpdate) return false;
+    if (!productToUpdate || !masterProductId) return false;
     if (type === "salida" && productToUpdate.stock < quantity) return false;
 
     const currentBalance = isNewToWarehouse ? 0 : productToUpdate.stock;
     const newStock = type === "entrada" ? currentBalance + quantity : currentBalance - quantity;
 
     try {
+      // 2. Actualizar Stock en tabla de almacén
       if (isNewToWarehouse) {
         const { error } = await supabase
           .from(tableName)
@@ -210,23 +251,25 @@ export function useInventory() {
         setState(prev => prev.map(p => p.id === productToUpdate!.id ? { ...p, stock: newStock } : p));
       }
 
-      const m: Movement = {
-        id: Math.random().toString(36).substr(2, 9),
-        productId,
-        productName: `${productToUpdate.name} (${warehouse === 'interno' ? 'Inst' : 'Elec'})`,
-        type,
-        quantity,
-        date: new Date().toISOString(),
-        note,
-        responsible,
-      };
+      // 3. Registrar Movimiento en Supabase
+      const { error: mError } = await supabase
+        .from('movimientos')
+        .insert([{
+          product_id: masterProductId,
+          type,
+          quantity,
+          note,
+          responsible,
+          warehouse
+        }]);
 
-      const updated = [m, ...movements];
-      setMovements(updated);
-      localStorage.setItem("inventory_movements", JSON.stringify(updated));
+      if (mError) throw mError;
+
+      // 4. Actualizar estado local de movimientos
+      await fetchMovements();
       return true;
     } catch (e) {
-      console.error(`Error stock ${warehouse}:`, e);
+      console.error(`Error registro movimiento ${warehouse}:`, e);
       return false;
     }
   };
@@ -282,7 +325,14 @@ export function useInventory() {
     products,
     internalProducts,
     electricalProducts,
-    movements,
+    movements: movements.map(m => {
+      // Re-asociar el nombre del producto buscando en el catálogo general por ID
+      const p = products.find(prod => prod.id === m.productId);
+      return {
+        ...m,
+        productName: p ? p.name : "Producto no encontrado"
+      };
+    }),
     loading,
     addMovement,
     addProduct,
