@@ -252,6 +252,7 @@ export function useInventory() {
       }
 
       // 3. Registrar Movimiento en Supabase
+      console.log("Intentando registrar movimiento para masterProductId:", masterProductId);
       const { error: mError } = await supabase
         .from('movimientos')
         .insert([{
@@ -263,13 +264,17 @@ export function useInventory() {
           warehouse
         }]);
 
-      if (mError) throw mError;
+      if (mError) {
+        console.error("Error de Supabase al insertar movimiento:", mError);
+        throw mError;
+      }
 
-      // 4. Actualizar estado local de movimientos
       await fetchMovements();
       return true;
-    } catch (e) {
-      console.error(`Error registro movimiento ${warehouse}:`, e);
+    } catch (e: any) {
+      console.error(`Error crítico en registro (${warehouse}):`, e);
+      // Si el error viene de Supabase, lo mostramos detallado en consola
+      if (e.message) console.error("Detalle del error:", e.message);
       return false;
     }
   };

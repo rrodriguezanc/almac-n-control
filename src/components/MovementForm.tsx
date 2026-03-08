@@ -15,13 +15,13 @@ interface MovementFormProps {
     quantity: number,
     note: string,
     responsible: string,
-    warehouse: "interno" | "electrico"
+    warehouse: "instrumentacion" | "electrico"
   ) => Promise<boolean>;
 }
 
 export function MovementForm({ products, internalProducts, electricalProducts, onSubmit }: MovementFormProps) {
   const [type, setType] = useState<"entrada" | "salida">("entrada");
-  const [warehouse, setWarehouse] = useState<"interno" | "electrico">("interno");
+  const [warehouse, setWarehouse] = useState<"instrumentacion" | "electrico">("instrumentacion");
   const [productId, setProductId] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [quantity, setQuantity] = useState("");
@@ -33,7 +33,7 @@ export function MovementForm({ products, internalProducts, electricalProducts, o
 
   // Selector de lista de productos basado en el tipo de movimiento y almacén
   const activeProductsSource = useMemo(() => {
-    const currentInternal = warehouse === "interno" ? internalProducts : electricalProducts;
+    const currentInternal = warehouse === "instrumentacion" ? internalProducts : electricalProducts;
     if (type === "salida") return currentInternal;
 
     // Para entrada, unimos la lista actual del almacén con el catálogo general para permitir traslados
@@ -80,7 +80,7 @@ export function MovementForm({ products, internalProducts, electricalProducts, o
         return;
       }
 
-      setSuccess(`${type === "entrada" ? "Entrada" : "Salida"} en almacén ${warehouse === 'interno' ? 'Instrumentación' : 'Eléctrico'} registrada.`);
+      setSuccess(`${type === "entrada" ? "Entrada" : "Salida"} en almacén ${warehouse === 'instrumentacion' ? 'Instrumentación' : 'Eléctrico'} registrada.`);
       setProductId("");
       setSearchTerm("");
       setQuantity("");
@@ -108,8 +108,8 @@ export function MovementForm({ products, internalProducts, electricalProducts, o
           <div className="flex p-1 bg-muted rounded-xl gap-1">
             <button
               type="button"
-              onClick={() => { setWarehouse("interno"); setProductId(""); setSearchTerm(""); }}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all ${warehouse === "interno"
+              onClick={() => { setWarehouse("instrumentacion"); setProductId(""); setSearchTerm(""); }}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all ${warehouse === "instrumentacion"
                 ? "bg-white text-primary shadow-sm"
                 : "text-muted-foreground hover:bg-white/50"
                 }`}
@@ -159,7 +159,7 @@ export function MovementForm({ products, internalProducts, electricalProducts, o
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder={type === "entrada" ? "Buscar en catálogo general..." : `Buscar en Almacén ${warehouse === 'interno' ? 'Instrumentación' : 'Eléctrico'}...`}
+              placeholder={type === "entrada" ? "Buscar en catálogo general..." : `Buscar en Almacén ${warehouse === 'instrumentacion' ? 'Instrumentación' : 'Eléctrico'}...`}
               className="pl-10 h-11"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
