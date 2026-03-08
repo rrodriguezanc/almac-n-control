@@ -4,13 +4,25 @@ import { StatsCards } from "../components/StatsCards";
 import { InventoryTable } from "../components/InventoryTable";
 import { MovementForm } from "../components/MovementForm";
 import { MovementHistory } from "../components/MovementHistory";
-import { Warehouse, LayoutDashboard, Package, ArrowLeftRight, History, Search } from "lucide-react";
+import { LoginModal } from "../components/LoginModal";
+import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
+import {
+  Warehouse,
+  LayoutDashboard,
+  Package,
+  ArrowLeftRight,
+  History as HistoryIcon,
+  Search,
+  LogOut,
+  Key,
+  UserCheck
+} from "lucide-react";
 
-type Tab = "dashboard" | "inventario" | "interno" | "electrico" | "movimiento" | "historial";
+type Tab = "dashboard" | "inventario" | "interno" | "electrico" | "movimiento" | "historial" | "login";
 
 const Index = () => {
-  const { products, internalProducts, electricalProducts, movements, addMovement, stats, loading } = useInventory();
+  const { products, internalProducts, electricalProducts, movements, addMovement, stats, loading, isAdmin, signOut, user } = useInventory();
   const [tab, setTab] = useState<Tab>("dashboard");
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -32,13 +44,14 @@ const Index = () => {
       p.sku.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
+  const tabs: { id: Tab; label: string; icon: React.ElementType; hidden?: boolean }[] = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "inventario", label: "Catálogo Gral", icon: Package },
     { id: "interno", label: "Instrumentación", icon: Warehouse },
     { id: "electrico", label: "Eléctrico", icon: Warehouse },
-    { id: "movimiento", label: "Registrar", icon: ArrowLeftRight },
-    { id: "historial", label: "Historial", icon: History },
+    { id: "movimiento", label: "Registrar", icon: ArrowLeftRight, hidden: !isAdmin },
+    { id: "historial", label: "Historial", icon: HistoryIcon },
+    { id: "login", label: isAdmin ? "Admin" : "Login", icon: isAdmin ? UserCheck : Key },
   ];
 
   return (
@@ -60,7 +73,7 @@ const Index = () => {
       <nav className="bg-card border-b sticky top-0 z-20 shadow-sm backdrop-blur-md bg-card/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex gap-1 overflow-x-auto py-2 scrollbar-hide">
-            {tabs.map((t) => (
+            {tabs.map((t) => !t.hidden && (
               <button
                 key={t.id}
                 onClick={() => {
@@ -172,27 +185,48 @@ const Index = () => {
               )
             }
 
-            {
-              tab === "movimiento" && (
-                <div className="max-w-lg mx-auto animate-in zoom-in-95 duration-300">
-                  <div className="text-center mb-8 bg-muted/30 p-4 rounded-xl">
-                    <h2 className="text-2xl font-bold tracking-tight">Registro de Operaciones</h2>
-                    <p className="text-muted-foreground font-medium">Gestiona traslados y repartos internos</p>
-                  </div>
-                  <MovementForm
-                    products={products}
-                    internalProducts={internalProducts}
-                    electricalProducts={electricalProducts}
-                    onSubmit={addMovement}
-                  />
+            {tab === "movimiento" && isAdmin && (
+              <div className="max-w-lg mx-auto animate-in zoom-in-95 duration-300">
+                <div className="text-center mb-8 bg-muted/30 p-4 rounded-xl">
+                  <h2 className="text-2xl font-bold tracking-tight">Registro de Operaciones</h2>
+                  <p className="text-muted-foreground font-medium">Gestiona traslados y repartos internos</p>
                 </div>
-              )
+                <MovementForm
+                  products={products}
+                  internalProducts={internalProducts}
+                  electricalProducts={electricalProducts}
+                  onSubmit={addMovement}
+                />
+              </div>
+            )
             }
 
-            {tab === "historial" && (
-              <div className="space-y-6 animate-in fade-in duration-300">
-                <h2 className="text-2xl font-bold tracking-tight">Historial Completo</h2>
-                <MovementHistory movements={movements} />
+            {tab === "login" && (
+              <div className="max-w-md mx-auto">
+                {isAdmin ? (
+                  <div className="bg-card border-2 p-8 rounded-2xl text-center space-y-6 mt-12 shadow-sm animate-in fade-in zoom-in duration-300">
+                    <div className="bg-emerald-50 text-emerald-600 p-4 rounded-full w-fit mx-auto">
+                      <UserCheck className="h-10 w-10" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-black">Sesión Iniciada</h2>
+                      <p className="text-muted-foreground font-medium mt-1">Conectado como {user?.email}</p>
+                    </div>
+                    <div className="bg-muted/30 p-4 rounded-lg text-left">
+                      <p className="text-xs font-black uppercase text-muted-foreground mb-2">Permisos Activos</p>
+                      <ul className="text-sm space-y-1 font-bold">
+                        <li className="flex items-center gap-2 text-emerald-600"><div className="h-1.5 w-1.5 rounded-full bg-emerald-600" /> Registrar Entradas</li>
+                        <li className="flex items-center gap-2 text-emerald-600"><div className="h-1.5 w-1.5 rounded-full bg-emerald-600" /> Registrar Salidas</li>
+                        <li className="flex items-center gap-2 text-emerald-600"><div className="h-1.5 w-1.5 rounded-full bg-emerald-600" /> Gestionar Stock</li>
+                      </ul>
+                    </div>
+                    <Button variant="destructive" className="w-full h-12 font-bold text-lg" onClick={() => { signOut(); setTab("dashboard"); }}>
+                      <LogOut className="mr-2 h-5 w-5" /> Cerrar Sesión
+                    </Button>
+                  </div>
+                ) : (
+                  <LoginModal />
+                )}
               </div>
             )}
           </>

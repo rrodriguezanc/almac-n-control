@@ -34,6 +34,7 @@ export function useInventory() {
   const [electricalProducts, setElectricalProducts] = useState<Product[]>([]);
   const [movements, setMovements] = useState<Movement[]>([]);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<any>(null);
 
   // Fetch products from Supabase
   const fetchProducts = async () => {
@@ -166,6 +167,10 @@ export function useInventory() {
 
   useEffect(() => {
     const init = async () => {
+      // Verificar si hay una sesión activa
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user ?? null);
+
       await Promise.all([
         fetchProducts(),
         fetchInternalProducts(),
@@ -174,6 +179,13 @@ export function useInventory() {
       ]);
     };
     init();
+
+    // Escuchar cambios en la autenticación
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const addMovement = async (
@@ -368,6 +380,9 @@ export function useInventory() {
       todayExits,
       lowStockCount,
     },
+    user,
+    isAdmin: !!user,
+    signOut: () => supabase.auth.signOut(),
   };
 }
 
