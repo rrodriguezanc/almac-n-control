@@ -194,35 +194,53 @@ export function useInventory() {
     let masterProductId = "";
 
     // 1. Resolver el producto y obtener su ID del catálogo maestro para la tabla de movimientos (FK)
+    console.log(`Iniciando movimiento en ${warehouse} para producto:`, productId);
+
     if (type === "salida") {
       productToUpdate = currentProducts.find((p) => p.id === productId);
       if (productToUpdate) {
-        // Buscar el ID maestro buscando por SKU en la lista de productos generales
+        // Buscamos el ID maestro en el catálogo general por SKU (numero_articulo)
         const genP = products.find(p => p.sku === productToUpdate!.sku);
-        masterProductId = genP ? genP.id : productId; // Si no hay match, usamos el ID que tenemos (asumiendo UUID)
+        masterProductId = genP ? genP.id : productToUpdate.id;
       }
     } else {
       productToUpdate = currentProducts.find((p) => p.id === productId);
       if (!productToUpdate) {
+        // Si no está en el almacén, viene del catálogo general
         const genProduct = products.find((p) => p.id === productId);
         if (genProduct) {
+          masterProductId = genProduct.id;
           const existing = currentProducts.find(p => p.sku === genProduct.sku);
           if (existing) {
             productToUpdate = existing;
-            masterProductId = genProduct.id;
+            isNewToWarehouse = false;
           } else {
             productToUpdate = genProduct;
-            masterProductId = genProduct.id;
             isNewToWarehouse = true;
           }
         }
       } else {
+        // Si ya está en el almacén, buscamos su ID maestro por SKU
         const genP = products.find(p => p.sku === productToUpdate!.sku);
-        masterProductId = genP ? genP.id : productId;
+        masterProductId = genP ? genP.id : productToUpdate.id;
       }
     }
 
-    if (!productToUpdate || !masterProductId) return false;
+    if (!productToUpdate) {
+      console.error("Producto no encontrado para la operación");
+      return false;
+    }
+
+    // Si masterProductId no parece un UUID (ej: un string corto), el insert en movimientos fallará
+    // Intentamos asegurar que tenemos un UUID válido del catálogo maestro
+    if (!masterProductId || masterProductId.length < 10) {
+      const retryGenP = products.find(p => p.sku === productToUpdate!.sku);
+      if (retryGenP) masterProductId = retryGenP.id;
+      else {
+        console.error("No se pudo obtener un UUID de producto maestro válido para la restricción de SQL.");
+        return false;
+      }
+    }
     if (type === "salida" && productToUpdate.stock < quantity) return false;
 
     const currentBalance = isNewToWarehouse ? 0 : productToUpdate.stock;
