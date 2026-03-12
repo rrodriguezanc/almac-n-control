@@ -220,8 +220,31 @@ const Index = () => {
                   onSubmit={addMovement}
                 />
               </div>
-            )
-            }
+            )}
+
+            {tab === "historial" && (
+              <div className="space-y-6 animate-in fade-in duration-300">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <h2 className="text-2xl font-bold tracking-tight">Historial de Movimientos</h2>
+                  <div className="relative w-full md:w-96">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar en historial (producto o nota)..."
+                      className="pl-10 h-11 border-2 focus-visible:ring-primary"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <MovementHistory 
+                  movements={movements.filter(m => 
+                    m.productName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    m.note?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    m.responsible?.toLowerCase().includes(searchTerm.toLowerCase())
+                  )} 
+                />
+              </div>
+            )}
 
             {tab === "login" && (
               <div className="max-w-md mx-auto">
