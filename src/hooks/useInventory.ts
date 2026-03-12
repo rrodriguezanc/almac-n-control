@@ -149,6 +149,7 @@ export function useInventory() {
 
       if (error) throw error;
       if (data) {
+        console.log(`Movimientos cargados: ${data.length}`);
         setMovements(data.map((m: any) => ({
           id: m.id,
           productId: m.product_id,
@@ -167,16 +168,23 @@ export function useInventory() {
 
   useEffect(() => {
     const init = async () => {
-      // Verificar si hay una sesión activa
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user ?? null);
+      setLoading(true);
+      try {
+        // Verificar si hay una sesión activa
+        const { data: { session } } = await supabase.auth.getSession();
+        setUser(session?.user ?? null);
 
-      await Promise.all([
-        fetchProducts(),
-        fetchInternalProducts(),
-        fetchElectricalProducts(),
-        fetchMovements()
-      ]);
+        await Promise.all([
+          fetchProducts(),
+          fetchInternalProducts(),
+          fetchElectricalProducts(),
+          fetchMovements()
+        ]);
+      } catch (error) {
+        console.error("Error inicializando:", error);
+      } finally {
+        setLoading(false);
+      }
     };
     init();
 

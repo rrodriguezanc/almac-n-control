@@ -24,35 +24,42 @@ export function MovementHistory({ movements, limit }: MovementHistoryProps) {
         </p>
       </div>
       <div className="divide-y overflow-y-auto max-h-[600px]">
-        {displayMovements.map((m) => (
-          <div key={m.id} className="flex items-center gap-4 p-4 hover:bg-muted/30 transition-colors">
-            <div
-              className={`p-2 rounded-lg ${
-                m.type === "entrada" ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
-              }`}
-            >
-              {m.type === "entrada" ? (
-                <ArrowDownToLine className="h-4 w-4" />
-              ) : (
-                <ArrowUpFromLine className="h-4 w-4" />
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-sm truncate">{m.productName}</p>
-              <p className="text-xs text-muted-foreground truncate">{m.note}</p>
-            </div>
-            <div className="text-right shrink-0">
-              <p
-                className={`font-semibold text-sm tabular-nums ${
-                  m.type === "entrada" ? "text-success" : "text-destructive"
+        {displayMovements.length > 0 ? (
+          displayMovements.map((m) => (
+            <div key={m.id} className="flex items-center gap-4 p-4 hover:bg-muted/30 transition-colors">
+              <div
+                className={`p-2 rounded-lg ${
+                  m.type === "entrada" ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
                 }`}
               >
-                {m.type === "entrada" ? "+" : "-"}{m.quantity}
-              </p>
-              <p className="text-xs text-muted-foreground">{formatDate(m.date)}</p>
+                {m.type === "entrada" ? (
+                  <ArrowDownToLine className="h-4 w-4" />
+                ) : (
+                  <ArrowUpFromLine className="h-4 w-4" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm truncate">{m.productName}</p>
+                <p className="text-xs text-muted-foreground truncate">{m.note}</p>
+              </div>
+              <div className="text-right shrink-0">
+                <p
+                  className={`font-semibold text-sm tabular-nums ${
+                    m.type === "entrada" ? "text-success" : "text-destructive"
+                  }`}
+                >
+                  {m.type === "entrada" ? "+" : "-"}{m.quantity}
+                </p>
+                <p className="text-xs text-muted-foreground">{formatDate(m.date)}</p>
+              </div>
             </div>
+          ))
+        ) : (
+          <div className="p-10 text-center space-y-2">
+            <p className="text-sm font-bold text-muted-foreground">No se encontraron movimientos.</p>
+            <p className="text-xs text-muted-foreground/60">Registra una entrada o salida para ver el historial.</p>
           </div>
-        ))}
+        )}
       </div>
     </div>
   );
