@@ -361,11 +361,22 @@ export function useInventory() {
     internalProducts,
     electricalProducts,
     movements: movements.map(m => {
-      // Re-asociar el nombre del producto buscando en el catálogo general por ID
-      const p = products.find(prod => prod.id === m.productId);
+      // Intentar encontrar el nombre en cualquier lista disponible
+      const allPossibleProducts = [...products, ...internalProducts, ...electricalProducts];
+      const p = allPossibleProducts.find(prod => prod.id === m.productId || prod.sku === m.productId);
+      
+      let name = "Producto no encontrado";
+      if (p) {
+        name = p.name;
+      } else {
+        // Fallback: tratar de encontrarlo por SKU si productId es un SKU
+        const pBySku = allPossibleProducts.find(prod => prod.sku === m.productId);
+        if (pBySku) name = pBySku.name;
+      }
+
       return {
         ...m,
-        productName: p ? p.name : "Producto no encontrado"
+        productName: `${name} (${m.warehouse === 'instrumentacion' ? 'Inst' : 'Elec'})`
       };
     }),
     loading,

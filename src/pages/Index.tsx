@@ -16,8 +16,10 @@ import {
   Search,
   LogOut,
   Key,
-  UserCheck
+  UserCheck,
+  Download
 } from "lucide-react";
+import { exportToExcel } from "../lib/utils";
 
 type Tab = "dashboard" | "inventario" | "interno" | "electrico" | "movimiento" | "historial" | "login";
 
@@ -111,7 +113,7 @@ const Index = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-1 space-y-4">
                     <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground bg-muted w-fit px-2 py-1 rounded">Últimos Movimientos</h3>
-                    <MovementHistory movements={movements} />
+                    <MovementHistory movements={movements} limit={10} />
                   </div>
                   <div className="lg:col-span-1 space-y-4">
                     <h3 className="text-xs font-black uppercase tracking-widest text-rose-600 bg-rose-50 w-fit px-2 py-1 rounded">Crítico Instrumentación</h3>
@@ -150,14 +152,24 @@ const Index = () => {
                 <div className="space-y-6 animate-in fade-in duration-300">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <h2 className="text-2xl font-bold tracking-tight">Almacén de Instrumentación</h2>
-                    <div className="relative w-full md:w-96">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Buscar en almacén instrumentación..."
-                        className="pl-10 h-11 border-2 focus-visible:ring-primary"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
+                    <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="gap-2 font-bold"
+                        onClick={() => exportToExcel(filteredInternal, "Stock_Instrumentacion")}
+                      >
+                        <Download className="h-4 w-4" /> Descargar Excel
+                      </Button>
+                      <div className="relative w-full md:w-80">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Buscar en almacén instrumentación..."
+                          className="pl-10 h-11 border-2 focus-visible:ring-primary"
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                      </div>
                     </div>
                   </div>
                   <InventoryTable products={filteredInternal} />
@@ -170,14 +182,24 @@ const Index = () => {
                 <div className="space-y-6 animate-in fade-in duration-300">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <h2 className="text-2xl font-bold tracking-tight">Almacén Eléctrico</h2>
-                    <div className="relative w-full md:w-96">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Buscar en almacén eléctrico..."
-                        className="pl-10 h-11 border-2 focus-visible:ring-primary"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
+                    <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="gap-2 font-bold"
+                        onClick={() => exportToExcel(filteredElectrical, "Stock_Electrico")}
+                      >
+                        <Download className="h-4 w-4" /> Descargar Excel
+                      </Button>
+                      <div className="relative w-full md:w-80">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Buscar en almacén eléctrico..."
+                          className="pl-10 h-11 border-2 focus-visible:ring-primary"
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                      </div>
                     </div>
                   </div>
                   <InventoryTable products={filteredElectrical} />
