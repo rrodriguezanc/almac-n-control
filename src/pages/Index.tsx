@@ -60,7 +60,7 @@ const Index = () => {
     <div className="min-h-screen bg-background text-foreground selection:bg-primary/20">
       {/* Header */}
       <header className="bg-primary text-primary-foreground border-b shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-4 flex items-center gap-3">
           <div className="bg-white p-1 rounded-lg overflow-hidden flex items-center justify-center shadow-inner">
             <img src="/shouxin.jpeg" alt="Logotipo Shouxin" className="h-12 w-12 object-contain" />
           </div>
@@ -73,7 +73,7 @@ const Index = () => {
 
       {/* Tab Navigation */}
       <nav className="bg-card border-b sticky top-0 z-20 shadow-sm backdrop-blur-md bg-card/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6">
           <div className="flex gap-1 overflow-x-auto py-2 scrollbar-hide">
             {tabs.map((t) => !t.hidden && (
               <button
@@ -96,7 +96,7 @@ const Index = () => {
       </nav>
 
       {/* Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+      <main className="max-w-[1600px] mx-auto px-4 sm:px-6 py-6 space-y-6">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-32 animate-in fade-in zoom-in duration-500">
             <div className="relative">
