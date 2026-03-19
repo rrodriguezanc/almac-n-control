@@ -92,75 +92,126 @@ export function useInventory() {
 
   const fetchInternalProducts = async () => {
     try {
-      setLoading(true);
-      const { data, error } = await supabase.from('productos_internos').select('*');
-      if (error) throw error;
-      if (data) {
-        setInternalProducts(data.map((p: any) => ({
-          id: String(p.id),
-          sku: String(p.numero_articulo || ""),
-          name: String(p.descripcion || "Sin nombre"),
-          stock: Number(p.stock_actual !== undefined ? p.stock_actual : p.en_stock || 0),
-          minStock: 0,
-          unit: String(p.unidad_medida || "pzas"),
-          category: "Interno",
-          location: String(p.zona || "N/A"),
-          status: "Activo"
-        })));
+      let allData: any[] = [];
+      let from = 0;
+      const pageSize = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('productos_internos')
+          .select('*')
+          .range(from, from + pageSize - 1);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          allData = [...allData, ...data];
+          from += pageSize;
+          if (data.length < pageSize) hasMore = false;
+        } else {
+          hasMore = false;
+        }
+
+        if (from > 10000) break; // Límite de seguridad
       }
+
+      setInternalProducts(allData.map((p: any) => ({
+        id: String(p.id),
+        sku: String(p.numero_articulo || ""),
+        name: String(p.descripcion || "Sin nombre"),
+        stock: Number(p.stock_actual !== undefined ? p.stock_actual : p.en_stock || 0),
+        minStock: 0,
+        unit: String(p.unidad_medida || "pzas"),
+        category: "Interno",
+        location: String(p.zona || "N/A"),
+        status: "Activo"
+      })));
     } catch (e) {
       console.error("Error productos internos:", e);
-    } finally {
-      setLoading(false);
     }
   };
 
   const fetchElectricalProducts = async () => {
     try {
-      setLoading(true);
-      const { data, error } = await supabase.from('productos_internos_electricos').select('*');
-      if (error) throw error;
-      if (data) {
-        setElectricalProducts(data.map((p: any) => ({
-          id: String(p.id),
-          sku: String(p.numero_articulo || ""),
-          name: String(p.descripcion || "Sin nombre"),
-          stock: Number(p.stock_actual !== undefined ? p.stock_actual : p.en_stock || 0),
-          minStock: 0,
-          unit: String(p.unidad_medida || "pzas"),
-          category: "Eléctrico",
-          location: String(p.zona || "N/A"),
-          status: "Activo"
-        })));
+      let allData: any[] = [];
+      let from = 0;
+      const pageSize = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('productos_internos_electricos')
+          .select('*')
+          .range(from, from + pageSize - 1);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          allData = [...allData, ...data];
+          from += pageSize;
+          if (data.length < pageSize) hasMore = false;
+        } else {
+          hasMore = false;
+        }
+
+        if (from > 10000) break; // Límite de seguridad
       }
+
+      setElectricalProducts(allData.map((p: any) => ({
+        id: String(p.id),
+        sku: String(p.numero_articulo || ""),
+        name: String(p.descripcion || "Sin nombre"),
+        stock: Number(p.stock_actual !== undefined ? p.stock_actual : p.en_stock || 0),
+        minStock: 0,
+        unit: String(p.unidad_medida || "pzas"),
+        category: "Eléctrico",
+        location: String(p.zona || "N/A"),
+        status: "Activo"
+      })));
     } catch (e) {
       console.error("Error productos eléctricos:", e);
-    } finally {
-      setLoading(false);
     }
   };
 
   const fetchMovements = async () => {
     try {
-      const { data, error } = await supabase
-        .from('movimientos')
-        .select('*')
-        .order('date', { ascending: false });
+      let allData: any[] = [];
+      let from = 0;
+      const pageSize = 1000;
+      let hasMore = true;
 
-      if (error) throw error;
-      if (data) {
-        console.log(`Movimientos cargados: ${data.length}`);
-        setMovements(data.map((m: any) => ({
-          id: m.id,
-          productId: m.product_id,
-          type: m.type,
-          quantity: Number(m.quantity),
-          date: m.date,
-          note: m.note || "",
-          responsible: m.responsible || "",
-          warehouse: m.warehouse
-        })));
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('movimientos')
+          .select('*')
+          .order('date', { ascending: false })
+          .range(from, from + pageSize - 1);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          allData = [...allData, ...data];
+          from += pageSize;
+          if (data.length < pageSize) hasMore = false;
+        } else {
+          hasMore = false;
+        }
+
+        if (from > 20000) break; // Límite de seguridad para historial (hasta 20k, ajustable)
       }
+
+      console.log(`Movimientos cargados: ${allData.length}`);
+      setMovements(allData.map((m: any) => ({
+        id: m.id,
+        productId: m.product_id,
+        type: m.type,
+        quantity: Number(m.quantity),
+        date: m.date,
+        note: m.note || "",
+        responsible: m.responsible || "",
+        warehouse: m.warehouse
+      })));
     } catch (e) {
       console.error("Error al cargar movimientos:", e);
     }
