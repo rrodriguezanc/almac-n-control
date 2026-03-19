@@ -25,6 +25,8 @@ export function MovementForm({ products, internalProducts, electricalProducts, o
   const [productId, setProductId] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [quantity, setQuantity] = useState("");
+  const [ot, setOt] = useState("");
+  const [area, setArea] = useState("");
   const [note, setNote] = useState("");
   const [responsible, setResponsible] = useState("");
   const [error, setError] = useState("");
@@ -74,7 +76,14 @@ export function MovementForm({ products, internalProducts, electricalProducts, o
 
     try {
       setIsSubmitting(true);
-      const result = await onSubmit(productId, type, qty, note, responsible, warehouse);
+      
+      const parts = [];
+      if (ot) parts.push(`OT: ${ot}`);
+      if (area) parts.push(`Área: ${area}`);
+      if (note) parts.push(`Nota: ${note}`);
+      const combinedNote = parts.join(" | ");
+
+      const result = await onSubmit(productId, type, qty, combinedNote, responsible, warehouse);
       if (!result) {
         setError("Error al registrar el movimiento. Verifica el stock o la conexión.");
         return;
@@ -84,6 +93,8 @@ export function MovementForm({ products, internalProducts, electricalProducts, o
       setProductId("");
       setSearchTerm("");
       setQuantity("");
+      setOt("");
+      setArea("");
       setNote("");
       setResponsible("");
       setTimeout(() => setSuccess(""), 3000);
@@ -222,10 +233,10 @@ export function MovementForm({ products, internalProducts, electricalProducts, o
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="responsible" className="font-bold text-xs uppercase tracking-wider">Responsable *</Label>
+            <Label htmlFor="responsible" className="font-bold text-xs uppercase tracking-wider">Personal (Recibe/Solicita) *</Label>
             <Input
               id="responsible"
-              placeholder="Nombre"
+              placeholder="Nombre del trabajador"
               className="h-11"
               value={responsible}
               onChange={(e) => setResponsible(e.target.value)}
@@ -234,11 +245,36 @@ export function MovementForm({ products, internalProducts, electricalProducts, o
           </div>
         </div>
 
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="ot" className="font-bold text-xs uppercase tracking-wider">Orden de Trabajo (OT)</Label>
+            <Input
+              id="ot"
+              placeholder="Ej: 12345"
+              className="h-11"
+              value={ot}
+              onChange={(e) => setOt(e.target.value)}
+              maxLength={50}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="area" className="font-bold text-xs uppercase tracking-wider">Área Destino / Origen</Label>
+            <Input
+              id="area"
+              placeholder="Ej: Mantenimiento"
+              className="h-11"
+              value={area}
+              onChange={(e) => setArea(e.target.value)}
+              maxLength={100}
+            />
+          </div>
+        </div>
+
         <div className="space-y-2">
-          <Label htmlFor="note" className="font-bold text-xs uppercase tracking-wider">Nota / Referencia</Label>
+          <Label htmlFor="note" className="font-bold text-xs uppercase tracking-wider">Nota Adicional / Referencia</Label>
           <Input
             id="note"
-            placeholder="Orden, destino, etc."
+            placeholder="Especificaciones o comentarios extras."
             className="h-11"
             value={note}
             onChange={(e) => setNote(e.target.value)}
