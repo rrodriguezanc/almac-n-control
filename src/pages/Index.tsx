@@ -116,11 +116,31 @@ const Index = () => {
                     <MovementHistory movements={movements} limit={10} />
                   </div>
                   <div className="lg:col-span-1 space-y-4">
-                    <h3 className="text-xs font-black uppercase tracking-widest text-rose-600 bg-rose-50 w-fit px-2 py-1 rounded">Crítico Instrumentación</h3>
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-xs font-black uppercase tracking-widest text-rose-600 bg-rose-50 w-fit px-2 py-1 rounded">Crítico Instrumentación</h3>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-7 text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 font-bold"
+                        onClick={() => exportToExcel(internalProducts.filter(p => p.stock <= p.minStock), "Critico_Instrumentacion")}
+                      >
+                        <Download className="h-3 w-3 mr-1" /> Excel
+                      </Button>
+                    </div>
                     <InventoryTable products={internalProducts.filter(p => p.stock <= p.minStock).slice(0, 10)} />
                   </div>
                   <div className="lg:col-span-1 space-y-4">
-                    <h3 className="text-xs font-black uppercase tracking-widest text-amber-600 bg-amber-50 w-fit px-2 py-1 rounded">Crítico Eléctrico</h3>
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-xs font-black uppercase tracking-widest text-amber-600 bg-amber-50 w-fit px-2 py-1 rounded">Crítico Eléctrico</h3>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-7 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 font-bold"
+                        onClick={() => exportToExcel(electricalProducts.filter(p => p.stock <= p.minStock), "Critico_Electrico")}
+                      >
+                        <Download className="h-3 w-3 mr-1" /> Excel
+                      </Button>
+                    </div>
                     <InventoryTable products={electricalProducts.filter(p => p.stock <= p.minStock).slice(0, 10)} />
                   </div>
                 </div>
