@@ -118,9 +118,9 @@ const Index = () => {
                   <div className="lg:col-span-1 space-y-4">
                     <div className="flex justify-between items-center">
                       <h3 className="text-xs font-black uppercase tracking-widest text-rose-600 bg-rose-50 w-fit px-2 py-1 rounded">Crítico Instrumentación</h3>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="h-7 text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 font-bold"
                         onClick={() => exportToExcel(internalProducts.filter(p => p.stock <= p.minStock), "Critico_Instrumentacion")}
                       >
@@ -132,9 +132,9 @@ const Index = () => {
                   <div className="lg:col-span-1 space-y-4">
                     <div className="flex justify-between items-center">
                       <h3 className="text-xs font-black uppercase tracking-widest text-amber-600 bg-amber-50 w-fit px-2 py-1 rounded">Crítico Eléctrico</h3>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="h-7 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 font-bold"
                         onClick={() => exportToExcel(electricalProducts.filter(p => p.stock <= p.minStock), "Critico_Electrico")}
                       >
@@ -173,9 +173,9 @@ const Index = () => {
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <h2 className="text-2xl font-bold tracking-tight">Almacén de Instrumentación</h2>
                     <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         className="gap-2 font-bold"
                         onClick={() => exportToExcel(filteredInternal, "Stock_Instrumentacion")}
                       >
@@ -203,9 +203,9 @@ const Index = () => {
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <h2 className="text-2xl font-bold tracking-tight">Almacén Eléctrico</h2>
                     <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         className="gap-2 font-bold"
                         onClick={() => exportToExcel(filteredElectrical, "Stock_Electrico")}
                       >
@@ -256,12 +256,12 @@ const Index = () => {
                     />
                   </div>
                 </div>
-                <MovementHistory 
-                  movements={movements.filter(m => 
+                <MovementHistory
+                  movements={movements.filter(m =>
                     m.productName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     m.note?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     m.responsible?.toLowerCase().includes(searchTerm.toLowerCase())
-                  )} 
+                  )}
                 />
               </div>
             )}
