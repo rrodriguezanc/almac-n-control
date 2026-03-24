@@ -410,9 +410,16 @@ export function useInventory() {
     }
   };
 
-  const today = new Date().toISOString().split('T')[0];
-  const todayEntries = movements.filter(m => m.type === "entrada" && m.date.startsWith(today)).length;
-  const todayExits = movements.filter(m => m.type === "salida" && m.date.startsWith(today)).length;
+  const now = new Date();
+  const isLocalToday = (isoString: string) => {
+    const d = new Date(isoString);
+    return d.getFullYear() === now.getFullYear() &&
+           d.getMonth() === now.getMonth() &&
+           d.getDate() === now.getDate();
+  };
+
+  const todayEntries = movements.filter(m => m.type === "entrada" && isLocalToday(m.date)).length;
+  const todayExits = movements.filter(m => m.type === "salida" && isLocalToday(m.date)).length;
   const lowStockCount = [...internalProducts, ...electricalProducts].filter(p => p.stock <= p.minStock).length;
 
   return {

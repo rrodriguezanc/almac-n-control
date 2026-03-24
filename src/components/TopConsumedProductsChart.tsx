@@ -106,7 +106,7 @@ export function TopConsumedProductsChart({ movements }: TopConsumedProductsChart
         </div>
       </div>
 
-      <div className="flex-1 w-full min-h-[300px]">
+      <div className="w-full h-[350px]">
         {chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} layout="vertical" margin={{ top: 0, right: 30, left: 10, bottom: 0 }}>
