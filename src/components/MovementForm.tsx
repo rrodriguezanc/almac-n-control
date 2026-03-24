@@ -3,7 +3,7 @@ import type { Product } from "../hooks/useInventory";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { ArrowDownToLine, ArrowUpFromLine, Search, CheckCircle2 } from "lucide-react";
+import { ArrowDownToLine, ArrowUpFromLine, Search, CheckCircle2, Plus, Trash2 } from "lucide-react";
 
 interface MovementFormProps {
   products: Product[];
@@ -25,10 +25,16 @@ export function MovementForm({ products, internalProducts, electricalProducts, o
   const [productId, setProductId] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [quantity, setQuantity] = useState("");
+
+  // Cart state
+  const [cart, setCart] = useState<{ product: Product, qty: number }[]>([]);
+
+  // Shared state
   const [ot, setOt] = useState("");
   const [area, setArea] = useState("");
   const [note, setNote] = useState("");
   const [responsible, setResponsible] = useState("");
+
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -58,48 +64,81 @@ export function MovementForm({ products, internalProducts, electricalProducts, o
 
   const selectedProduct = activeProductsSource.find(p => p.id === productId);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
-
-    if (!productId || !quantity || !responsible) {
-      setError("Completa todos los campos obligatorios.");
+  const handleAddToCart = () => {
+    if (!selectedProduct) {
+      setError("Debes seleccionar un producto primero.");
       return;
     }
-
     const qty = parseInt(quantity);
     if (isNaN(qty) || qty <= 0) {
       setError("La cantidad debe ser un número positivo.");
       return;
     }
+    if (type === "salida" && selectedProduct.stock < qty) {
+      setError("No hay suficiente stock para esta salida.");
+      return;
+    }
+
+    const existingIndex = cart.findIndex(c => c.product.id === selectedProduct.id);
+    if (existingIndex >= 0) {
+      const newCart = [...cart];
+      newCart[existingIndex].qty += qty;
+      setCart(newCart);
+    } else {
+      setCart([...cart, { product: selectedProduct, qty }]);
+    }
+
+    setProductId("");
+    setSearchTerm("");
+    setQuantity("");
+    setError("");
+  };
+
+  const removeFromCart = (id: string) => {
+    setCart(cart.filter(c => c.product.id !== id));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    if (cart.length === 0) {
+      setError("Construye la lista de elementos antes de registrar.");
+      return;
+    }
+    if (!responsible) {
+      setError("El personal es obligatorio.");
+      return;
+    }
 
     try {
       setIsSubmitting(true);
-      
+
       const parts = [];
       if (ot) parts.push(`OT: ${ot}`);
       if (area) parts.push(`Área: ${area}`);
       if (note) parts.push(`Nota: ${note}`);
       const combinedNote = parts.join(" | ");
 
-      const result = await onSubmit(productId, type, qty, combinedNote, responsible, warehouse);
-      if (!result) {
-        setError("Error al registrar el movimiento. Verifica el stock o la conexión.");
-        return;
+      for (const item of cart) {
+        const result = await onSubmit(item.product.id, type, item.qty, combinedNote, responsible, warehouse);
+        if (!result) {
+          setError(`Error guardando ${item.product.sku}. Revisa conexión o stock.`);
+          setIsSubmitting(false);
+          return;
+        }
       }
 
-      setSuccess(`${type === "entrada" ? "Entrada" : "Salida"} en almacén ${warehouse === 'instrumentacion' ? 'Instrumentación' : 'Eléctrico'} registrada.`);
-      setProductId("");
-      setSearchTerm("");
-      setQuantity("");
+      setSuccess(`Registrados ${cart.length} productos con éxito.`);
+      setCart([]);
       setOt("");
       setArea("");
       setNote("");
       setResponsible("");
-      setTimeout(() => setSuccess(""), 3000);
+      setTimeout(() => setSuccess(""), 4000);
     } catch (e) {
-      setError("Error inesperado al procesar el movimiento.");
+      setError("Error inesperado al procesar el listado.");
     } finally {
       setIsSubmitting(false);
     }
@@ -219,9 +258,9 @@ export function MovementForm({ products, internalProducts, electricalProducts, o
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="quantity" className="font-bold text-xs uppercase tracking-wider">Cantidad *</Label>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end bg-card p-4 rounded-xl border border-muted">
+          <div className="md:col-span-2 space-y-2">
+            <Label htmlFor="quantity" className="font-bold text-xs uppercase tracking-wider">Cantidad para {selectedProduct ? selectedProduct.sku : "este producto"}</Label>
             <Input
               id="quantity"
               type="number"
@@ -230,56 +269,87 @@ export function MovementForm({ products, internalProducts, electricalProducts, o
               className="h-11"
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
+              disabled={!selectedProduct}
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="responsible" className="font-bold text-xs uppercase tracking-wider">Personal (Recibe/Solicita) *</Label>
-            <Input
-              id="responsible"
-              placeholder="Nombre del trabajador"
-              className="h-11"
-              value={responsible}
-              onChange={(e) => setResponsible(e.target.value)}
-              maxLength={100}
-            />
-          </div>
+          <Button type="button" onClick={handleAddToCart} disabled={!selectedProduct || !quantity} className="h-11 font-bold whitespace-nowrap">
+            <Plus className="w-4 h-4 mr-2" /> Agregar a Lista
+          </Button>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="ot" className="font-bold text-xs uppercase tracking-wider">Orden de Trabajo (OT)</Label>
-            <Input
-              id="ot"
-              placeholder="Ej: 12345"
-              className="h-11"
-              value={ot}
-              onChange={(e) => setOt(e.target.value)}
-              maxLength={50}
-            />
+        {/* CART LIST */}
+        {cart.length > 0 && (
+          <div className="border rounded-xl bg-white shadow-inner overflow-hidden">
+            <div className="bg-muted px-4 py-2 font-bold text-sm">Elementos en esta {type === "entrada" ? "Entrada" : "Salida"}</div>
+            <div className="divide-y">
+              {cart.map(c => (
+                <div key={c.product.id} className="flex justify-between items-center p-3 hover:bg-muted/30">
+                  <div className="flex flex-col">
+                    <span className="font-bold text-sm">{c.product.sku}</span>
+                    <span className="text-xs text-muted-foreground truncate w-48 sm:w-64">{c.product.name}</span>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className="font-bold tabular-nums bg-muted px-2 py-1 rounded-md">{c.qty} {c.product.unit}</span>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeFromCart(c.product.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="area" className="font-bold text-xs uppercase tracking-wider">Área Destino / Origen</Label>
-            <Input
-              id="area"
-              placeholder="Ej: Mantenimiento"
-              className="h-11"
-              value={area}
-              onChange={(e) => setArea(e.target.value)}
-              maxLength={100}
-            />
-          </div>
-        </div>
+        )}
 
-        <div className="space-y-2">
-          <Label htmlFor="note" className="font-bold text-xs uppercase tracking-wider">Nota Adicional / Referencia</Label>
-          <Input
-            id="note"
-            placeholder="Especificaciones o comentarios extras."
-            className="h-11"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            maxLength={200}
-          />
+        <hr className="my-4" />
+
+        <div className="space-y-4">
+          <Label className="font-black text-sm uppercase tracking-widest text-muted-foreground">Datos del Movimiento</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="responsible" className="font-bold text-xs uppercase tracking-wider">Personal (Recibe/Solicita) *</Label>
+              <Input
+                id="responsible"
+                placeholder="Nombre del trabajador"
+                className="h-11 border-primary/20 focus-visible:ring-primary/50"
+                value={responsible}
+                onChange={(e) => setResponsible(e.target.value)}
+                maxLength={100}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="ot" className="font-bold text-xs uppercase tracking-wider">Orden de Trabajo (OT)</Label>
+              <Input
+                id="ot"
+                placeholder="Ej: 12345"
+                className="h-11 border-primary/20 focus-visible:ring-primary/50"
+                value={ot}
+                onChange={(e) => setOt(e.target.value)}
+                maxLength={50}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="area" className="font-bold text-xs uppercase tracking-wider">Área Destino / Origen</Label>
+              <Input
+                id="area"
+                placeholder="Ej: Mantenimiento"
+                className="h-11 border-primary/20 focus-visible:ring-primary/50"
+                value={area}
+                onChange={(e) => setArea(e.target.value)}
+                maxLength={100}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="note" className="font-bold text-xs uppercase tracking-wider">Nota Adicional / Referencia</Label>
+              <Input
+                id="note"
+                placeholder="Especificaciones o comentarios extras."
+                className="h-11 border-primary/20 focus-visible:ring-primary/50"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                maxLength={200}
+              />
+            </div>
+          </div>
         </div>
 
         {error && (
@@ -289,8 +359,8 @@ export function MovementForm({ products, internalProducts, electricalProducts, o
           <p className="text-sm text-success font-medium bg-success/5 p-3 rounded-lg border border-success/20">{success}</p>
         )}
 
-        <Button type="submit" className="w-full h-12 text-lg font-bold" disabled={isSubmitting || !productId}>
-          {isSubmitting ? "Procesando..." : `Registrar ${type === "entrada" ? "Ingreso" : "Salida"}`}
+        <Button type="submit" className="w-full h-14 text-lg font-black mt-4 transition-all hover:scale-[1.01]" disabled={isSubmitting || cart.length === 0}>
+          {isSubmitting ? "Procesando Batch..." : `Registrar ${cart.length} productos en ${type === "entrada" ? "Ingreso" : "Salida"}`}
         </Button>
       </form>
     </div>
