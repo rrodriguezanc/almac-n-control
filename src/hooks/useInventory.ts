@@ -20,6 +20,7 @@ export interface Movement {
   id: string;
   productId: string;
   productName?: string; // Para mostrar en el historial (buscado en memoria o join)
+  currentStock?: number; // Para estimaciones
   type: "entrada" | "salida";
   quantity: number;
   date: string;
@@ -418,8 +419,12 @@ export function useInventory() {
            d.getDate() === now.getDate();
   };
 
-  const todayEntries = movements.filter(m => m.type === "entrada" && isLocalToday(m.date)).length;
-  const todayExits = movements.filter(m => m.type === "salida" && isLocalToday(m.date)).length;
+  const todayEntries = movements
+    .filter(m => m.type === "entrada" && isLocalToday(m.date))
+    .reduce((sum, m) => sum + m.quantity, 0);
+  const todayExits = movements
+    .filter(m => m.type === "salida" && isLocalToday(m.date))
+    .reduce((sum, m) => sum + m.quantity, 0);
   const lowStockCount = [...internalProducts, ...electricalProducts].filter(p => p.stock <= p.minStock).length;
 
   return {
@@ -427,22 +432,38 @@ export function useInventory() {
     internalProducts,
     electricalProducts,
     movements: movements.map(m => {
-      // Intentar encontrar el nombre en cualquier lista disponible
-      const allPossibleProducts = [...products, ...internalProducts, ...electricalProducts];
-      const p = allPossibleProducts.find(prod => prod.id === m.productId || prod.sku === m.productId);
+      // 1. Encontrar el producto máster en el catálogo general
+      const masterProduct = products.find(prod => prod.id === m.productId || prod.sku === m.productId);
+      
+      // 2. Extraer el SKU (para enlazar con el almacén local donde IDs difieren)
+      const targetSku = masterProduct ? masterProduct.sku : m.productId; 
+
+      // 3. Buscar en el almacén específico usando el SKU
+      const warehouseProducts = m.warehouse === 'instrumentacion' ? internalProducts : electricalProducts;
+      let localProduct = warehouseProducts.find(prod => prod.sku === targetSku || prod.id === targetSku);
       
       let name = "Producto no encontrado";
-      if (p) {
-        name = p.name;
+      let currentStock = 0;
+      
+      if (localProduct) {
+        name = localProduct.name;
+        currentStock = localProduct.stock !== undefined ? localProduct.stock : 0;
+      } else if (masterProduct) {
+        name = masterProduct.name;
+        currentStock = masterProduct.stock !== undefined ? masterProduct.stock : 0;
       } else {
-        // Fallback: tratar de encontrarlo por SKU si productId es un SKU
-        const pBySku = allPossibleProducts.find(prod => prod.sku === m.productId);
-        if (pBySku) name = pBySku.name;
+        const allPossibleProducts = [...products, ...internalProducts, ...electricalProducts];
+        const fallbackP = allPossibleProducts.find(prod => prod.id === m.productId || prod.sku === m.productId);
+        if (fallbackP) {
+          name = fallbackP.name;
+          currentStock = fallbackP.stock !== undefined ? fallbackP.stock : 0;
+        }
       }
 
       return {
         ...m,
-        productName: `${name} (${m.warehouse === 'instrumentacion' ? 'Inst' : 'Elec'})`
+        productName: `${name} (${m.warehouse === 'instrumentacion' ? 'Inst' : 'Elec'})`,
+        currentStock
       };
     }),
     loading,
