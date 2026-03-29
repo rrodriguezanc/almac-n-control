@@ -5,6 +5,7 @@ import { InventoryTable } from "../components/InventoryTable";
 import { MovementForm } from "../components/MovementForm";
 import { MovementHistory } from "../components/MovementHistory";
 import { TopConsumedProductsChart } from "../components/TopConsumedProductsChart";
+import { AreaConsumptionChart } from "../components/AreaConsumptionChart";
 import { LoginModal } from "../components/LoginModal";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -111,7 +112,10 @@ const Index = () => {
             {tab === "dashboard" && (
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <StatsCards {...stats} />
-                <TopConsumedProductsChart movements={movements} />
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                  <TopConsumedProductsChart movements={movements} />
+                  <AreaConsumptionChart movements={movements} />
+                </div>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-1 space-y-4">
                     <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground bg-muted w-fit px-2 py-1 rounded">Últimos Movimientos</h3>
