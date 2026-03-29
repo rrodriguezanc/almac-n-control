@@ -20,7 +20,7 @@ import {
   UserCheck,
   Download
 } from "lucide-react";
-import { exportToExcel } from "../lib/utils";
+import { exportToExcel, exportMovementsToExcel } from "../lib/utils";
 
 type Tab = "dashboard" | "inventario" | "interno" | "electrico" | "movimiento" | "historial" | "login";
 
@@ -248,14 +248,23 @@ const Index = () => {
               <div className="space-y-6 animate-in fade-in duration-300">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <h2 className="text-2xl font-bold tracking-tight">Historial de Movimientos</h2>
-                  <div className="relative w-full md:w-96">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Buscar en historial (producto o nota)..."
-                      className="pl-10 h-11 border-2 focus-visible:ring-primary"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+                  <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                    <Button
+                      variant="outline"
+                      className="gap-2 font-bold"
+                      onClick={() => exportMovementsToExcel(movements, "Historial_Movimientos")}
+                    >
+                      <Download className="h-4 w-4" /> Excel
+                    </Button>
+                    <div className="relative w-full md:w-80">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Buscar en historial (producto o nota)..."
+                        className="pl-10 h-11 border-2 focus-visible:ring-primary"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                    </div>
                   </div>
                 </div>
                 <MovementHistory
