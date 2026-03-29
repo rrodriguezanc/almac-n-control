@@ -112,7 +112,7 @@ const Index = () => {
             {tab === "dashboard" && (
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <StatsCards {...stats} />
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <TopConsumedProductsChart movements={movements} />
                   <AreaConsumptionChart movements={movements} />
                 </div>
