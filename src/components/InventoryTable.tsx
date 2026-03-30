@@ -68,9 +68,8 @@ export function InventoryTable({ products, variant = "interno" }: InventoryTable
           <thead>
             <tr className="border-b bg-muted/30">
               <th className="text-left p-3 font-semibold">SKU</th>
-              <th className="text-left p-3 font-semibold">Producto</th>
+              <th className="text-left p-3 font-semibold w-[40%]">Producto</th>
               <th className="text-left p-3 font-semibold">Categoría</th>
-              <th className="text-left p-3 font-semibold">Subcategoría</th>
               <th className="text-left p-3 font-semibold">Ubicación</th>
               {variant === "interno" && (
                 <>
@@ -87,9 +86,8 @@ export function InventoryTable({ products, variant = "interno" }: InventoryTable
               return (
                 <tr key={p.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                   <td className="p-3 font-mono text-xs text-muted-foreground truncate max-w-[120px]" title={p.sku}>{p.sku}</td>
-                  <td className="p-3 font-medium truncate max-w-[200px]" title={p.name}>{p.name}</td>
+                  <td className="p-3 font-medium truncate max-w-[350px]" title={p.name}>{p.name}</td>
                   <td className="p-3 text-muted-foreground whitespace-nowrap">{p.category}</td>
-                  <td className="p-3 text-muted-foreground whitespace-nowrap">{p.subCategory}</td>
                   <td className="p-3 font-mono text-xs">{p.location}</td>
                   {variant === "interno" && (
                     <>

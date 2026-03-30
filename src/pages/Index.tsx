@@ -6,6 +6,7 @@ import { MovementForm } from "../components/MovementForm";
 import { MovementHistory } from "../components/MovementHistory";
 import { TopConsumedProductsChart } from "../components/TopConsumedProductsChart";
 import { AreaConsumptionChart } from "../components/AreaConsumptionChart";
+import { MotorsTable } from "../components/MotorsTable";
 import { LoginModal } from "../components/LoginModal";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -19,14 +20,15 @@ import {
   LogOut,
   Key,
   UserCheck,
-  Download
+  Download,
+  Zap
 } from "lucide-react";
 import { exportToExcel, exportMovementsToExcel } from "../lib/utils";
 
-type Tab = "dashboard" | "inventario" | "interno" | "electrico" | "movimiento" | "historial" | "login";
+type Tab = "dashboard" | "inventario" | "interno" | "electrico" | "movimiento" | "historial" | "motores" | "login";
 
 const Index = () => {
-  const { products, internalProducts, electricalProducts, movements, addMovement, stats, loading, isAdmin, signOut, user } = useInventory();
+  const { products, internalProducts, electricalProducts, movements, motors, addMovement, stats, loading, isAdmin, signOut, user } = useInventory();
   const [tab, setTab] = useState<Tab>("dashboard");
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -53,6 +55,7 @@ const Index = () => {
     { id: "inventario", label: "Catálogo Gral", icon: Package },
     { id: "interno", label: "Instrumentación", icon: Warehouse },
     { id: "electrico", label: "Eléctrico", icon: Warehouse },
+    { id: "motores", label: "Motores", icon: Zap },
     { id: "movimiento", label: "Registrar", icon: ArrowLeftRight, hidden: !isAdmin },
     { id: "historial", label: "Historial", icon: HistoryIcon },
     { id: "login", label: isAdmin ? "Admin" : "Login", icon: isAdmin ? UserCheck : Key },
@@ -230,6 +233,12 @@ const Index = () => {
                   </div>
                   <InventoryTable products={filteredElectrical} />
                 </div>
+              )
+            }
+
+            {
+              tab === "motores" && (
+                <MotorsTable motors={motors} />
               )
             }
 

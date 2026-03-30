@@ -16,6 +16,31 @@ export interface Product {
   status?: string;
 }
 
+export interface Motor {
+  id: string;
+  area: string | null;
+  componente: string | null;
+  tag: string | null;
+  equipo: string | null;
+  tipo_motor: string | null;
+  frame: string | null;
+  potencia_kw: number | null;
+  corriente_a: string | null;
+  nivel_tension_kv: string | null;
+  tipo_conexion: string | null;
+  rpm: number | null;
+  frecuencia_hz: number | null;
+  clase_aislamiento: string | null;
+  cos_phi: number | null;
+  rodamiento_lado_acople: string | null;
+  rodamiento_lado_opuesto: string | null;
+  codigo1: string | null;
+  codigo2: string | null;
+  fabricante: string | null;
+  peso_kg: number | null;
+  created_at: string;
+}
+
 export interface Movement {
   id: string;
   productId: string;
@@ -34,6 +59,7 @@ export function useInventory() {
   const [internalProducts, setInternalProducts] = useState<Product[]>([]);
   const [electricalProducts, setElectricalProducts] = useState<Product[]>([]);
   const [movements, setMovements] = useState<Movement[]>([]);
+  const [motors, setMotors] = useState<Motor[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
 
@@ -218,6 +244,36 @@ export function useInventory() {
     }
   };
 
+  const fetchMotors = async () => {
+    try {
+      let allData: any[] = [];
+      let hasMore = true;
+      let from = 0;
+      const pageSize = 1000;
+
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('motores')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .range(from, from + pageSize - 1);
+
+        if (error) throw error;
+        if (data && data.length > 0) {
+          allData = [...allData, ...data];
+          from += pageSize;
+          if (data.length < pageSize) hasMore = false;
+        } else {
+          hasMore = false;
+        }
+        if (from > 10000) break;
+      }
+      setMotors(allData);
+    } catch (e) {
+      console.error("Error al cargar motores:", e);
+    }
+  };
+
   useEffect(() => {
     const init = async () => {
       setLoading(true);
@@ -230,7 +286,8 @@ export function useInventory() {
           fetchProducts(),
           fetchInternalProducts(),
           fetchElectricalProducts(),
-          fetchMovements()
+          fetchMovements(),
+          fetchMotors()
         ]);
       } catch (error) {
         console.error("Error inicializando:", error);
@@ -431,6 +488,7 @@ export function useInventory() {
     products,
     internalProducts,
     electricalProducts,
+    motors,
     movements: movements.map(m => {
       // 1. Encontrar el producto máster en el catálogo general
       const masterProduct = products.find(prod => prod.id === m.productId || prod.sku === m.productId);
