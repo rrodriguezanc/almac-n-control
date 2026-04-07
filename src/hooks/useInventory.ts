@@ -38,6 +38,20 @@ export interface Motor {
   codigo2: string | null;
   fabricante: string | null;
   peso_kg: number | null;
+  estado?: string | null;
+  ubicacion_actual?: string | null;
+  created_at: string;
+}
+
+export interface MotorMovement {
+  id: string;
+  motor_id: string;
+  tipo: string;
+  fecha: string;
+  origen: string | null;
+  destino: string | null;
+  responsable: string | null;
+  observacion: string | null;
   created_at: string;
 }
 
@@ -60,6 +74,7 @@ export function useInventory() {
   const [electricalProducts, setElectricalProducts] = useState<Product[]>([]);
   const [movements, setMovements] = useState<Movement[]>([]);
   const [motors, setMotors] = useState<Motor[]>([]);
+  const [motorMovements, setMotorMovements] = useState<MotorMovement[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
 
@@ -244,6 +259,48 @@ export function useInventory() {
     }
   };
 
+  const registerMotorMaintenance = async (motorId: string, type: "entrada" | "salida", payload: any) => {
+    try {
+      // 1. Insertar el historial del mantenimiento
+      const isEntry = type === "entrada";
+      const { error: historyError } = await supabase
+        .from('movimientos_motores')
+        .insert([{
+          motor_id: motorId,
+          tipo: isEntry ? 'INGRESO_MT' : 'SALIDA_MT',
+          fecha: new Date(payload.date || new Date()).toISOString(),
+          origen: isEntry ? payload.location : null,
+          destino: !isEntry ? payload.location : null,
+          responsable: payload.responsible,
+          observacion: payload.observation
+        }]);
+      
+      if (historyError) {
+        console.warn("Error al registrar en movimientos_motores:", historyError.message);
+      }
+
+      // 2. Actualizar el estado y ubicación del motor
+      const nuevoEstado = type === "entrada" ? "EN_MANTENIMIENTO" : "DISPONIBLE"; // o 'INSTALADO' si quieren, pero dejaremos DISPONIBLE por defecto
+      const { error: updateError } = await supabase
+        .from('motores')
+        .update({
+          estado: nuevoEstado,
+          ubicacion_actual: payload.location
+        })
+        .eq('id', motorId);
+
+      if (updateError) throw updateError;
+
+      // 3. Refrescar localmente
+      await fetchMotors();
+      await fetchMotorMovements();
+      return true;
+    } catch (e) {
+      console.error("Error al registrar mantenimiento:", e);
+      throw e;
+    }
+  };
+
   const fetchMotors = async () => {
     try {
       let allData: any[] = [];
@@ -274,6 +331,36 @@ export function useInventory() {
     }
   };
 
+  const fetchMotorMovements = async () => {
+    try {
+      let allData: any[] = [];
+      let hasMore = true;
+      let from = 0;
+      const pageSize = 1000;
+
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('movimientos_motores')
+          .select('*')
+          .order('fecha', { ascending: false })
+          .range(from, from + pageSize - 1);
+
+        if (error) throw error;
+        if (data && data.length > 0) {
+          allData = [...allData, ...data];
+          from += pageSize;
+          if (data.length < pageSize) hasMore = false;
+        } else {
+          hasMore = false;
+        }
+        if (from > 10000) break;
+      }
+      setMotorMovements(allData);
+    } catch (e) {
+      console.error("Error al cargar historial de motores:", e);
+    }
+  };
+
   useEffect(() => {
     const init = async () => {
       setLoading(true);
@@ -287,7 +374,8 @@ export function useInventory() {
           fetchInternalProducts(),
           fetchElectricalProducts(),
           fetchMovements(),
-          fetchMotors()
+          fetchMotors(),
+          fetchMotorMovements()
         ]);
       } catch (error) {
         console.error("Error inicializando:", error);
@@ -489,6 +577,8 @@ export function useInventory() {
     internalProducts,
     electricalProducts,
     motors,
+    motorMovements,
+    registerMotorMaintenance,
     movements: movements.map(m => {
       // 1. Encontrar el producto máster en el catálogo general
       const masterProduct = products.find(prod => prod.id === m.productId || prod.sku === m.productId);

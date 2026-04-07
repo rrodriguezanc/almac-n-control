@@ -7,6 +7,8 @@ import { MovementHistory } from "../components/MovementHistory";
 import { TopConsumedProductsChart } from "../components/TopConsumedProductsChart";
 import { AreaConsumptionChart } from "../components/AreaConsumptionChart";
 import { MotorsTable } from "../components/MotorsTable";
+import { MotorMaintenanceModal } from "../components/MotorMaintenanceModal";
+import { MotorMovementsHistoryModal } from "../components/MotorMovementsHistoryModal";
 import { LoginModal } from "../components/LoginModal";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -28,9 +30,11 @@ import { exportToExcel, exportMovementsToExcel } from "../lib/utils";
 type Tab = "dashboard" | "inventario" | "interno" | "electrico" | "movimiento" | "historial" | "motores" | "login";
 
 const Index = () => {
-  const { products, internalProducts, electricalProducts, movements, motors, addMovement, stats, loading, isAdmin, signOut, user } = useInventory();
+  const { products, internalProducts, electricalProducts, movements, motors, motorMovements, addMovement, registerMotorMaintenance, stats, loading, isAdmin, signOut, user } = useInventory();
   const [tab, setTab] = useState<Tab>("dashboard");
   const [searchTerm, setSearchTerm] = useState("");
+  const [mntModal, setMntModal] = useState<{isOpen: boolean, motor: any, type: "entrada" | "salida"}>({ isOpen: false, motor: null, type: "entrada" });
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
 
   const filteredGeneral = products.filter(
     (p) =>
@@ -238,7 +242,14 @@ const Index = () => {
 
             {
               tab === "motores" && (
-                <MotorsTable motors={motors} />
+                <MotorsTable 
+                  motors={motors} 
+                  motorMovements={motorMovements}
+                  isAdmin={isAdmin}
+                  onShowHistory={() => setIsHistoryModalOpen(true)}
+                  onRegisterEntryToMaintenance={(m) => setMntModal({ isOpen: true, motor: m, type: "entrada" })}
+                  onRegisterExitFromMaintenance={(m) => setMntModal({ isOpen: true, motor: m, type: "salida" })}
+                />
               )
             }
 
@@ -321,6 +332,22 @@ const Index = () => {
           </>
         )}
       </main>
+
+      {/* Modales globales */}
+      <MotorMaintenanceModal 
+        isOpen={mntModal.isOpen}
+        onClose={() => setMntModal(prev => ({ ...prev, isOpen: false }))}
+        motor={mntModal.motor}
+        type={mntModal.type}
+        onSubmit={(id, payload) => registerMotorMaintenance(id, mntModal.type, payload)}
+      />
+
+      <MotorMovementsHistoryModal
+        isOpen={isHistoryModalOpen}
+        onClose={() => setIsHistoryModalOpen(false)}
+        movements={motorMovements}
+        motors={motors}
+      />
     </div>
   );
 };
