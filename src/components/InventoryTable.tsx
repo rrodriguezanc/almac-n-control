@@ -85,9 +85,9 @@ export function InventoryTable({ products, variant = "interno" }: InventoryTable
               const isLow = p.stock <= (p.minStock || 0);
               return (
                 <tr key={p.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
-                  <td className="p-3 font-mono text-xs text-muted-foreground truncate max-w-[120px]" title={p.sku}>{p.sku}</td>
-                  <td className="p-3 font-medium truncate max-w-[350px]" title={p.name}>{p.name}</td>
-                  <td className="p-3 text-muted-foreground whitespace-nowrap">{p.category}</td>
+                  <td className="p-3 font-mono text-xs text-muted-foreground whitespace-nowrap" title={p.sku}>{p.sku}</td>
+                  <td className="p-3 font-medium min-w-[200px] text-balance" title={p.name}>{p.name}</td>
+                  <td className="p-3 text-muted-foreground">{p.category}</td>
                   <td className="p-3 font-mono text-xs">{p.location}</td>
                   {variant === "interno" && (
                     <>
