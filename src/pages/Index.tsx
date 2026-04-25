@@ -33,7 +33,7 @@ const Index = () => {
   const { products, internalProducts, electricalProducts, movements, motors, motorMovements, addMovement, registerMotorMaintenance, stats, loading, isAdmin, signOut, user } = useInventory();
   const [tab, setTab] = useState<Tab>("dashboard");
   const [searchTerm, setSearchTerm] = useState("");
-  const [mntModal, setMntModal] = useState<{isOpen: boolean, motor: any, type: "entrada" | "salida"}>({ isOpen: false, motor: null, type: "entrada" });
+  const [mntModal, setMntModal] = useState<{ isOpen: boolean, motor: any, type: "entrada" | "salida" }>({ isOpen: false, motor: null, type: "entrada" });
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
 
   const filteredGeneral = products.filter(
@@ -59,7 +59,7 @@ const Index = () => {
     { id: "inventario", label: "Catálogo Gral", icon: Package },
     { id: "interno", label: "Instrumentación", icon: Warehouse },
     { id: "electrico", label: "Eléctrico", icon: Warehouse },
-    { id: "motores", label: "Motores", icon: Zap },
+    { id: "motores", label: "Motores 230", icon: Zap },
     { id: "movimiento", label: "Registrar", icon: ArrowLeftRight, hidden: !isAdmin },
     { id: "historial", label: "Historial", icon: HistoryIcon },
     { id: "login", label: isAdmin ? "Admin" : "Login", icon: isAdmin ? UserCheck : Key },
@@ -242,8 +242,8 @@ const Index = () => {
 
             {
               tab === "motores" && (
-                <MotorsTable 
-                  motors={motors} 
+                <MotorsTable
+                  motors={motors}
                   motorMovements={motorMovements}
                   isAdmin={isAdmin}
                   onShowHistory={() => setIsHistoryModalOpen(true)}
@@ -334,7 +334,7 @@ const Index = () => {
       </main>
 
       {/* Modales globales */}
-      <MotorMaintenanceModal 
+      <MotorMaintenanceModal
         isOpen={mntModal.isOpen}
         onClose={() => setMntModal(prev => ({ ...prev, isOpen: false }))}
         motor={mntModal.motor}
