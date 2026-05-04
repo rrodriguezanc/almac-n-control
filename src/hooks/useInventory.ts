@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 
 export interface Product {
@@ -60,6 +60,7 @@ export interface Movement {
   productId: string;
   productName?: string; // Para mostrar en el historial (buscado en memoria o join)
   currentStock?: number; // Para estimaciones
+  price?: number; // Precio unitario para graficar costos
   type: "entrada" | "salida";
   quantity: number;
   date: string;
@@ -167,6 +168,7 @@ export function useInventory() {
         unit: String(p.unidad_medida || "pzas"),
         category: "Interno",
         location: String(p.zona || "N/A"),
+        lastPrice: Number(p.precio || p.ultimo_precio_compra || 0),
         status: "Activo"
       })));
     } catch (e) {
@@ -209,6 +211,7 @@ export function useInventory() {
         unit: String(p.unidad_medida || "pzas"),
         category: "Eléctrico",
         location: String(p.zona || "N/A"),
+        lastPrice: Number(p.precio || p.ultimo_precio_compra || 0),
         status: "Activo"
       })));
     } catch (e) {
@@ -572,6 +575,71 @@ export function useInventory() {
     .reduce((sum, m) => sum + m.quantity, 0);
   const lowStockCount = [...internalProducts, ...electricalProducts].filter(p => p.stock <= p.minStock).length;
 
+  const mappedMovements = useMemo(() => {
+    const productMap = new Map<string, Product>();
+    const productSkuMap = new Map<string, Product>();
+    products.forEach(p => {
+      productMap.set(p.id, p);
+      if (p.sku) productSkuMap.set(p.sku, p);
+    });
+
+    const internalMap = new Map<string, Product>();
+    const internalSkuMap = new Map<string, Product>();
+    internalProducts.forEach(p => {
+      internalMap.set(p.id, p);
+      if (p.sku) internalSkuMap.set(p.sku, p);
+    });
+
+    const electricalMap = new Map<string, Product>();
+    const electricalSkuMap = new Map<string, Product>();
+    electricalProducts.forEach(p => {
+      electricalMap.set(p.id, p);
+      if (p.sku) electricalSkuMap.set(p.sku, p);
+    });
+
+    const allPossibleMap = new Map([...productMap, ...internalMap, ...electricalMap]);
+    const allPossibleSkuMap = new Map([...productSkuMap, ...internalSkuMap, ...electricalSkuMap]);
+
+    return movements.map(m => {
+      const masterProduct = productMap.get(m.productId) || productSkuMap.get(m.productId);
+      const targetSku = masterProduct ? masterProduct.sku : m.productId; 
+
+      const isInst = m.warehouse === 'instrumentacion';
+      const localMap = isInst ? internalMap : electricalMap;
+      const localSkuMap = isInst ? internalSkuMap : electricalSkuMap;
+
+      const localProduct = localSkuMap.get(targetSku) || localMap.get(targetSku);
+
+      let name = "Producto no encontrado";
+      let currentStock = 0;
+      let currentPrice = 0;
+
+      if (localProduct) {
+        name = localProduct.name;
+        currentStock = localProduct.stock !== undefined ? localProduct.stock : 0;
+        currentPrice = localProduct.lastPrice || 0;
+      } else if (masterProduct) {
+        name = masterProduct.name;
+        currentStock = masterProduct.stock !== undefined ? masterProduct.stock : 0;
+        currentPrice = masterProduct.lastPrice || 0;
+      } else {
+        const fallbackP = allPossibleMap.get(m.productId) || allPossibleSkuMap.get(m.productId);
+        if (fallbackP) {
+          name = fallbackP.name;
+          currentStock = fallbackP.stock !== undefined ? fallbackP.stock : 0;
+          currentPrice = fallbackP.lastPrice || 0;
+        }
+      }
+
+      return {
+        ...m,
+        productName: `${name} (${isInst ? 'Inst' : 'Elec'})`,
+        currentStock,
+        price: currentPrice
+      };
+    });
+  }, [movements, products, internalProducts, electricalProducts]);
+
   return {
     products,
     internalProducts,
@@ -579,41 +647,7 @@ export function useInventory() {
     motors,
     motorMovements,
     registerMotorMaintenance,
-    movements: movements.map(m => {
-      // 1. Encontrar el producto máster en el catálogo general
-      const masterProduct = products.find(prod => prod.id === m.productId || prod.sku === m.productId);
-      
-      // 2. Extraer el SKU (para enlazar con el almacén local donde IDs difieren)
-      const targetSku = masterProduct ? masterProduct.sku : m.productId; 
-
-      // 3. Buscar en el almacén específico usando el SKU
-      const warehouseProducts = m.warehouse === 'instrumentacion' ? internalProducts : electricalProducts;
-      let localProduct = warehouseProducts.find(prod => prod.sku === targetSku || prod.id === targetSku);
-      
-      let name = "Producto no encontrado";
-      let currentStock = 0;
-      
-      if (localProduct) {
-        name = localProduct.name;
-        currentStock = localProduct.stock !== undefined ? localProduct.stock : 0;
-      } else if (masterProduct) {
-        name = masterProduct.name;
-        currentStock = masterProduct.stock !== undefined ? masterProduct.stock : 0;
-      } else {
-        const allPossibleProducts = [...products, ...internalProducts, ...electricalProducts];
-        const fallbackP = allPossibleProducts.find(prod => prod.id === m.productId || prod.sku === m.productId);
-        if (fallbackP) {
-          name = fallbackP.name;
-          currentStock = fallbackP.stock !== undefined ? fallbackP.stock : 0;
-        }
-      }
-
-      return {
-        ...m,
-        productName: `${name} (${m.warehouse === 'instrumentacion' ? 'Inst' : 'Elec'})`,
-        currentStock
-      };
-    }),
+    movements: mappedMovements,
     loading,
     addMovement,
     addProduct,
