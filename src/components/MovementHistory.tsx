@@ -90,8 +90,15 @@ export function MovementHistory({ movements, limit }: MovementHistoryProps) {
                 )}
               </div>
               <div className="flex-1 min-w-0 pr-4">
-                <p className="font-medium text-sm text-balance">{m.productName}</p>
-                <p className="text-xs text-muted-foreground text-balance mt-0.5">{m.note}</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  {m.productSku && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-mono font-semibold bg-muted text-muted-foreground border shadow-sm">
+                      {m.productSku}
+                    </span>
+                  )}
+                  <p className="font-medium text-sm text-balance">{m.productName}</p>
+                </div>
+                <p className="text-xs text-muted-foreground text-balance mt-1">{m.note}</p>
               </div>
               <div className="text-right shrink-0">
                 <p

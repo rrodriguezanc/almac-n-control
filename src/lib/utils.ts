@@ -35,6 +35,7 @@ export function exportMovementsToExcel(movements: any[], filename: string) {
 
     return {
       "Fecha Mvto.": new Date(m.date).toLocaleString('es-MX'),
+      "SKU": m.productSku || "-",
       "Producto": m.productName || "Desconocido",
       "Tipo Operación": m.type === "entrada" ? "Entrada" : "Salida",
       "Cantidad": Math.abs(m.quantity),

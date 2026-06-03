@@ -296,6 +296,7 @@ const Index = () => {
                 <MovementHistory
                   movements={movements.filter(m =>
                     m.productName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    m.productSku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     m.note?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     m.responsible?.toLowerCase().includes(searchTerm.toLowerCase())
                   )}

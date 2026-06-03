@@ -59,6 +59,7 @@ export interface Movement {
   id: string;
   productId: string;
   productName?: string; // Para mostrar en el historial (buscado en memoria o join)
+  productSku?: string; // Código SKU
   currentStock?: number; // Para estimaciones
   price?: number; // Precio unitario para graficar costos
   type: "entrada" | "salida";
@@ -611,21 +612,25 @@ export function useInventory() {
       const localProduct = localSkuMap.get(targetSku) || localMap.get(targetSku);
 
       let name = "Producto no encontrado";
+      let sku = targetSku || "N/A";
       let currentStock = 0;
       let currentPrice = 0;
 
       if (localProduct) {
         name = localProduct.name;
+        sku = localProduct.sku || sku;
         currentStock = localProduct.stock !== undefined ? localProduct.stock : 0;
         currentPrice = localProduct.lastPrice || 0;
       } else if (masterProduct) {
         name = masterProduct.name;
+        sku = masterProduct.sku || sku;
         currentStock = masterProduct.stock !== undefined ? masterProduct.stock : 0;
         currentPrice = masterProduct.lastPrice || 0;
       } else {
         const fallbackP = allPossibleMap.get(m.productId) || allPossibleSkuMap.get(m.productId);
         if (fallbackP) {
           name = fallbackP.name;
+          sku = fallbackP.sku || sku;
           currentStock = fallbackP.stock !== undefined ? fallbackP.stock : 0;
           currentPrice = fallbackP.lastPrice || 0;
         }
@@ -634,6 +639,7 @@ export function useInventory() {
       return {
         ...m,
         productName: `${name} (${isInst ? 'Inst' : 'Elec'})`,
+        productSku: sku,
         currentStock,
         price: currentPrice
       };
