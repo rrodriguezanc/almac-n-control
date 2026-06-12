@@ -560,6 +560,63 @@ export function useInventory() {
     }
   };
 
+  const updateStockDirectly = async (
+    productId: string,
+    newStock: number,
+    warehouse: "instrumentacion" | "electrico"
+  ) => {
+    const tableName = warehouse === "instrumentacion" ? 'productos_internos' : 'productos_internos_electricos';
+    const currentProducts = warehouse === "instrumentacion" ? internalProducts : electricalProducts;
+    const setState = warehouse === "instrumentacion" ? setInternalProducts : setElectricalProducts;
+
+    const productToUpdate = currentProducts.find(p => p.id === productId);
+    if (!productToUpdate) {
+      console.error("Producto no encontrado en el almacén especificado");
+      return false;
+    }
+
+    const oldStock = productToUpdate.stock;
+    const diff = newStock - oldStock;
+
+    try {
+      const { error: updateError } = await supabase
+        .from(tableName)
+        .update({ stock_actual: newStock })
+        .eq('id', productId);
+
+      if (updateError) throw updateError;
+
+      setState(prev => prev.map(p => p.id === productId ? { ...p, stock: newStock } : p));
+
+      if (diff !== 0) {
+        const genP = products.find(p => p.sku === productToUpdate.sku);
+        const masterProductId = genP ? genP.id : productId;
+
+        const type = diff > 0 ? "entrada" : "salida";
+        const quantity = Math.abs(diff);
+        const note = `Ajuste manual de inventario (Stock anterior: ${oldStock} -> Nuevo: ${newStock})`;
+
+        await supabase
+          .from('movimientos')
+          .insert([{
+            product_id: masterProductId,
+            type,
+            quantity,
+            note,
+            responsible: user?.email || "Administrador",
+            warehouse
+          }]);
+
+        await fetchMovements();
+      }
+
+      return true;
+    } catch (e) {
+      console.error("Error al modificar stock directamente:", e);
+      return false;
+    }
+  };
+
   const now = new Date();
   const isLocalToday = (isoString: string) => {
     const d = new Date(isoString);
@@ -568,12 +625,22 @@ export function useInventory() {
            d.getDate() === now.getDate();
   };
 
-  const todayEntries = movements
-    .filter(m => m.type === "entrada" && isLocalToday(m.date))
-    .reduce((sum, m) => sum + m.quantity, 0);
-  const todayExits = movements
-    .filter(m => m.type === "salida" && isLocalToday(m.date))
-    .reduce((sum, m) => sum + m.quantity, 0);
+  const normalMovements = useMemo(() => {
+    return movements.filter(m => !m.note?.startsWith("Ajuste manual de inventario"));
+  }, [movements]);
+
+  const todayEntries = useMemo(() => {
+    return normalMovements
+      .filter(m => m.type === "entrada" && isLocalToday(m.date))
+      .reduce((sum, m) => sum + m.quantity, 0);
+  }, [normalMovements]);
+
+  const todayExits = useMemo(() => {
+    return normalMovements
+      .filter(m => m.type === "salida" && isLocalToday(m.date))
+      .reduce((sum, m) => sum + m.quantity, 0);
+  }, [normalMovements]);
+
   const lowStockCount = [...internalProducts, ...electricalProducts].filter(p => p.stock <= p.minStock).length;
 
   const mappedMovements = useMemo(() => {
@@ -601,7 +668,7 @@ export function useInventory() {
     const allPossibleMap = new Map([...productMap, ...internalMap, ...electricalMap]);
     const allPossibleSkuMap = new Map([...productSkuMap, ...internalSkuMap, ...electricalSkuMap]);
 
-    return movements.map(m => {
+    return normalMovements.map(m => {
       const masterProduct = productMap.get(m.productId) || productSkuMap.get(m.productId);
       const targetSku = masterProduct ? masterProduct.sku : m.productId; 
 
@@ -644,7 +711,7 @@ export function useInventory() {
         price: currentPrice
       };
     });
-  }, [movements, products, internalProducts, electricalProducts]);
+  }, [normalMovements, products, internalProducts, electricalProducts]);
 
   return {
     products,
@@ -658,6 +725,7 @@ export function useInventory() {
     addMovement,
     addProduct,
     importProducts,
+    updateStockDirectly,
     stats: {
       totalProducts: products.length,
       totalInternal: internalProducts.length,

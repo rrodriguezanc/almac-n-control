@@ -3,7 +3,7 @@ import type { Product } from "../hooks/useInventory";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { ArrowDownToLine, ArrowUpFromLine, Search, CheckCircle2, Plus, Trash2 } from "lucide-react";
+import { ArrowDownToLine, ArrowUpFromLine, Search, CheckCircle2, Plus, Trash2, Sliders } from "lucide-react";
 
 interface MovementFormProps {
   products: Product[];
@@ -17,9 +17,10 @@ interface MovementFormProps {
     responsible: string,
     warehouse: "instrumentacion" | "electrico"
   ) => Promise<boolean>;
+  onOpenAdjustStock?: () => void;
 }
 
-export function MovementForm({ products, internalProducts, electricalProducts, onSubmit }: MovementFormProps) {
+export function MovementForm({ products, internalProducts, electricalProducts, onSubmit, onOpenAdjustStock }: MovementFormProps) {
   const [type, setType] = useState<"entrada" | "salida">("entrada");
   const [warehouse, setWarehouse] = useState<"instrumentacion" | "electrico">("instrumentacion");
   const [productId, setProductId] = useState("");
@@ -146,9 +147,23 @@ export function MovementForm({ products, internalProducts, electricalProducts, o
 
   return (
     <div className="bg-card rounded-xl border-2 shadow-sm animate-fade-in overflow-hidden">
-      <div className="p-6 border-b bg-muted/20">
-        <h2 className="text-xl font-bold">Registrar Movimiento</h2>
-        <p className="text-sm text-muted-foreground mt-1">Busca el código y selecciona la operación</p>
+      <div className="p-6 border-b bg-muted/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-bold">Registrar Movimiento</h2>
+          <p className="text-sm text-muted-foreground mt-1">Busca el código y selecciona la operación</p>
+        </div>
+        {onOpenAdjustStock && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onOpenAdjustStock}
+            className="flex items-center gap-2 font-bold border-amber-500/30 bg-amber-500/10 text-amber-700 hover:bg-amber-500 hover:text-white transition-all shadow-sm shrink-0"
+          >
+            <Sliders className="h-4 w-4" />
+            Ajustar Stock Directo
+          </Button>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="p-6 space-y-5">

@@ -11,6 +11,7 @@ import { MotorsTable } from "../components/MotorsTable";
 import { MotorMaintenanceModal } from "../components/MotorMaintenanceModal";
 import { MotorMovementsHistoryModal } from "../components/MotorMovementsHistoryModal";
 import { LoginModal } from "../components/LoginModal";
+import { AdjustStockModal } from "../components/AdjustStockModal";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import {
@@ -31,11 +32,12 @@ import { exportToExcel, exportMovementsToExcel } from "../lib/utils";
 type Tab = "dashboard" | "inventario" | "interno" | "electrico" | "movimiento" | "historial" | "motores" | "login";
 
 const Index = () => {
-  const { products, internalProducts, electricalProducts, movements, motors, motorMovements, addMovement, registerMotorMaintenance, stats, loading, isAdmin, signOut, user } = useInventory();
+  const { products, internalProducts, electricalProducts, movements, motors, motorMovements, addMovement, registerMotorMaintenance, stats, loading, isAdmin, signOut, user, updateStockDirectly } = useInventory();
   const [tab, setTab] = useState<Tab>("dashboard");
   const [searchTerm, setSearchTerm] = useState("");
   const [mntModal, setMntModal] = useState<{ isOpen: boolean, motor: any, type: "entrada" | "salida" }>({ isOpen: false, motor: null, type: "entrada" });
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [isAdjustStockOpen, setIsAdjustStockOpen] = useState(false);
 
   const filteredGeneral = products.filter(
     (p) =>
@@ -266,6 +268,7 @@ const Index = () => {
                   internalProducts={internalProducts}
                   electricalProducts={electricalProducts}
                   onSubmit={addMovement}
+                  onOpenAdjustStock={() => setIsAdjustStockOpen(true)}
                 />
               </div>
             )}
@@ -350,6 +353,14 @@ const Index = () => {
         onClose={() => setIsHistoryModalOpen(false)}
         movements={motorMovements}
         motors={motors}
+      />
+
+      <AdjustStockModal
+        isOpen={isAdjustStockOpen}
+        onClose={() => setIsAdjustStockOpen(false)}
+        internalProducts={internalProducts}
+        electricalProducts={electricalProducts}
+        onAdjustStock={updateStockDirectly}
       />
     </div>
   );
