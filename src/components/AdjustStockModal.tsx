@@ -96,14 +96,14 @@ export function AdjustStockModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-xl w-[95vw] sm:w-full rounded-2xl p-6 gap-5 shadow-2xl border-2">
+      <DialogContent className="max-w-xl w-[95vw] sm:w-full max-h-[90vh] overflow-y-auto rounded-2xl p-6 gap-5 shadow-2xl border-2 custom-scrollbar">
         <DialogHeader className="space-y-2">
           <DialogTitle className="text-xl font-bold flex items-center gap-2 text-amber-600">
             <AlertTriangle className="h-6 w-6 text-amber-500 shrink-0" />
             Corrección de Stock (Ajuste Directo)
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground leading-relaxed">
-            Modifica la cantidad en almacén de forma inmediata. Esta acción actualizará los datos directamente en la base de datos y se mantendrá en registros de auditoría interna de base de datos, pero no se mostrará en el historial público de la web.
+            Esta acción actualizará los datos directamente en la base de datos y se mantendrá en registros de auditoría interna de la base de datos.
           </DialogDescription>
         </DialogHeader>
 
@@ -119,11 +119,10 @@ export function AdjustStockModal({
                   setProductId("");
                   setSearchTerm("");
                 }}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold transition-all ${
-                  warehouse === "instrumentacion"
-                    ? "bg-white text-primary shadow-sm ring-1 ring-black/5"
-                    : "text-muted-foreground hover:bg-white/50"
-                }`}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold transition-all ${warehouse === "instrumentacion"
+                  ? "bg-white text-primary shadow-sm ring-1 ring-black/5"
+                  : "text-muted-foreground hover:bg-white/50"
+                  }`}
               >
                 Instrumentación
               </button>
@@ -134,11 +133,10 @@ export function AdjustStockModal({
                   setProductId("");
                   setSearchTerm("");
                 }}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold transition-all ${
-                  warehouse === "electrico"
-                    ? "bg-white text-primary shadow-sm ring-1 ring-black/5"
-                    : "text-muted-foreground hover:bg-white/50"
-                }`}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold transition-all ${warehouse === "electrico"
+                  ? "bg-white text-primary shadow-sm ring-1 ring-black/5"
+                  : "text-muted-foreground hover:bg-white/50"
+                  }`}
               >
                 Almacén Eléctrico
               </button>
@@ -223,7 +221,7 @@ export function AdjustStockModal({
                   <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-0.5">Stock en Sistema</span>
                   <span className="text-xl font-black text-slate-800">{selectedProduct.stock} <span className="text-xs font-medium text-muted-foreground">{selectedProduct.unit}</span></span>
                 </div>
-                
+
                 <div className="flex justify-center sm:col-span-1">
                   <ArrowRight className="h-5 w-5 text-amber-500 rotate-90 sm:rotate-0" />
                 </div>
@@ -244,7 +242,7 @@ export function AdjustStockModal({
 
               <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50/80 p-2.5 rounded-lg border border-amber-200/50">
                 <ShieldCheck className="h-4 w-4 shrink-0 text-amber-600" />
-                <span>Esta modificación creará un registro de auditoría interna de base de datos.</span>
+                <span>Esta modificación creará un registro de auditoría interna en la base de datos.</span>
               </div>
             </div>
           )}
