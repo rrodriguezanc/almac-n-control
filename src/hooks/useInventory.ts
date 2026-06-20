@@ -403,7 +403,8 @@ export function useInventory() {
     quantity: number,
     note: string,
     responsible: string,
-    warehouse: "instrumentacion" | "electrico" = "instrumentacion"
+    warehouse: "instrumentacion" | "electrico" = "instrumentacion",
+    date?: string
   ) => {
     const tableName = warehouse === "instrumentacion" ? 'productos_internos' : 'productos_internos_electricos';
     const currentProducts = warehouse === "instrumentacion" ? internalProducts : electricalProducts;
@@ -500,7 +501,8 @@ export function useInventory() {
           quantity,
           note,
           responsible,
-          warehouse
+          warehouse,
+          date: date || new Date().toISOString()
         }]);
 
       if (mError) {

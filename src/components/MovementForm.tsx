@@ -15,7 +15,8 @@ interface MovementFormProps {
     quantity: number,
     note: string,
     responsible: string,
-    warehouse: "instrumentacion" | "electrico"
+    warehouse: "instrumentacion" | "electrico",
+    date?: string
   ) => Promise<boolean>;
   onOpenAdjustStock?: () => void;
 }
@@ -31,6 +32,15 @@ export function MovementForm({ products, internalProducts, electricalProducts, o
   const [cart, setCart] = useState<{ product: Product, qty: number }[]>([]);
 
   // Shared state
+  const getTodayLocalDateString = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const [date, setDate] = useState(getTodayLocalDateString());
   const [ot, setOt] = useState("");
   const [area, setArea] = useState("");
   const [note, setNote] = useState("");
@@ -122,8 +132,25 @@ export function MovementForm({ products, internalProducts, electricalProducts, o
       if (note) parts.push(`Nota: ${note}`);
       const combinedNote = parts.join(" | ");
 
+      // Get current local time to preserve ordering of actions
+      const currentLocalTime = new Date();
+      let movementIsoDate = new Date().toISOString();
+      if (date) {
+        const [year, month, day] = date.split('-').map(Number);
+        const d = new Date(
+          year,
+          month - 1,
+          day,
+          currentLocalTime.getHours(),
+          currentLocalTime.getMinutes(),
+          currentLocalTime.getSeconds(),
+          currentLocalTime.getMilliseconds()
+        );
+        movementIsoDate = d.toISOString();
+      }
+
       for (const item of cart) {
-        const result = await onSubmit(item.product.id, type, item.qty, combinedNote, responsible, warehouse);
+        const result = await onSubmit(item.product.id, type, item.qty, combinedNote, responsible, warehouse, movementIsoDate);
         if (!result) {
           setError(`Error guardando ${item.product.sku}. Revisa conexión o stock.`);
           setIsSubmitting(false);
@@ -137,6 +164,7 @@ export function MovementForm({ products, internalProducts, electricalProducts, o
       setArea("");
       setNote("");
       setResponsible("");
+      setDate(getTodayLocalDateString());
       setTimeout(() => setSuccess(""), 4000);
     } catch (e) {
       setError("Error inesperado al procesar el listado.");
@@ -362,6 +390,16 @@ export function MovementForm({ products, internalProducts, electricalProducts, o
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 maxLength={200}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="date" className="font-bold text-xs uppercase tracking-wider">Fecha del Movimiento</Label>
+              <Input
+                id="date"
+                type="date"
+                className="h-11 border-primary/20 focus-visible:ring-primary/50 font-medium text-slate-800"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
               />
             </div>
           </div>
