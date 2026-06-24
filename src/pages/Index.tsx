@@ -12,6 +12,7 @@ import { MotorMaintenanceModal } from "../components/MotorMaintenanceModal";
 import { MotorMovementsHistoryModal } from "../components/MotorMovementsHistoryModal";
 import { LoginModal } from "../components/LoginModal";
 import { AdjustStockModal } from "../components/AdjustStockModal";
+import { MonthlyConsumptionQuery } from "../components/MonthlyConsumptionQuery";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import {
@@ -38,6 +39,7 @@ const Index = () => {
   const [mntModal, setMntModal] = useState<{ isOpen: boolean, motor: any, type: "entrada" | "salida" }>({ isOpen: false, motor: null, type: "entrada" });
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [isAdjustStockOpen, setIsAdjustStockOpen] = useState(false);
+  const [historySubTab, setHistorySubTab] = useState<"movimientos" | "consumo">("movimientos");
 
   const filteredGeneral = products.filter(
     (p) =>
@@ -275,35 +277,77 @@ const Index = () => {
 
             {tab === "historial" && (
               <div className="space-y-6 animate-in fade-in duration-300">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <h2 className="text-2xl font-bold tracking-tight">Historial de Movimientos</h2>
-                  <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-                    <Button
-                      variant="outline"
-                      className="gap-2 font-bold"
-                      onClick={() => exportMovementsToExcel(movements, "Historial_Movimientos")}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-4">
+                  <div>
+                    <h2 className="text-2xl font-bold tracking-tight">Historial</h2>
+                    <p className="text-sm text-muted-foreground">Consulta operaciones pasadas y analiza el consumo de artículos</p>
+                  </div>
+
+                  {/* Sub-tab Selector */}
+                  <div className="flex bg-muted p-1 rounded-xl gap-1 w-full sm:w-auto">
+                    <button
+                      onClick={() => setHistorySubTab("movimientos")}
+                      className={`flex-1 sm:flex-initial px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${historySubTab === "movimientos"
+                        ? "bg-white text-primary shadow-sm"
+                        : "text-muted-foreground hover:bg-white/50"
+                        }`}
                     >
-                      <Download className="h-4 w-4" /> Excel
-                    </Button>
-                    <div className="relative w-full md:w-80">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Buscar en historial (producto o nota)..."
-                        className="pl-10 h-11 border-2 focus-visible:ring-primary"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
-                    </div>
+                      Registro de Movimientos
+                    </button>
+                    <button
+                      onClick={() => setHistorySubTab("consumo")}
+                      className={`flex-1 sm:flex-initial px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${historySubTab === "consumo"
+                        ? "bg-white text-primary shadow-sm"
+                        : "text-muted-foreground hover:bg-white/50"
+                        }`}
+                    >
+                      Consumo Mensual por artículo
+                    </button>
                   </div>
                 </div>
-                <MovementHistory
-                  movements={movements.filter(m =>
-                    m.productName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    m.productSku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    m.note?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    m.responsible?.toLowerCase().includes(searchTerm.toLowerCase())
-                  )}
-                />
+
+                {historySubTab === "movimientos" ? (
+                  <div className="space-y-6 animate-in fade-in duration-300">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <h3 className="text-lg font-semibold">Bitácora General</h3>
+                      <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                        <Button
+                          variant="outline"
+                          className="gap-2 font-bold"
+                          onClick={() => exportMovementsToExcel(movements, "Historial_Movimientos")}
+                        >
+                          <Download className="h-4 w-4" /> Excel
+                        </Button>
+                        <div className="relative w-full md:w-80">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            placeholder="Buscar en historial (producto o nota)..."
+                            className="pl-10 h-11 border-2 focus-visible:ring-primary"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <MovementHistory
+                      movements={movements.filter(m =>
+                        m.productName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        m.productSku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        m.note?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        m.responsible?.toLowerCase().includes(searchTerm.toLowerCase())
+                      )}
+                    />
+                  </div>
+                ) : (
+                  <div className="animate-in fade-in duration-300">
+                    <MonthlyConsumptionQuery
+                      products={products}
+                      internalProducts={internalProducts}
+                      electricalProducts={electricalProducts}
+                      movements={movements}
+                    />
+                  </div>
+                )}
               </div>
             )}
 

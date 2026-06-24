@@ -52,3 +52,17 @@ export function exportMovementsToExcel(movements: any[], filename: string) {
   XLSX.utils.book_append_sheet(workbook, worksheet, "Movimientos");
   XLSX.writeFile(workbook, `${filename}.xlsx`);
 }
+
+export function exportMonthlyConsumptionToExcel(productName: string, sku: string, data: any[]) {
+  const formattedData = data.map(row => ({
+    "Mes / Año": row.monthLabel,
+    "Cantidad Consumida": row.quantity,
+    "Número de Salidas": row.count,
+    "Promedio por Salida": Number((row.quantity / row.count).toFixed(2))
+  }));
+
+  const worksheet = XLSX.utils.json_to_sheet(formattedData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Consumo Mensual");
+  XLSX.writeFile(workbook, `Consumo_${sku}_${productName.substring(0, 20).replace(/[^a-zA-Z0-9]/g, '_')}.xlsx`);
+}
